@@ -3,7 +3,7 @@ const app = express();
 const port = 3000;
 
 app.get('/', (req, res) => {
-  res.send('Hello 2팀 나만무!!!');
+  res.send('Hello 2팀 멍톡 나만무!!!');
 });
 
 app.listen(port, () => {

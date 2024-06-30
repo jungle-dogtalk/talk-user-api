@@ -2,10 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const port = 3000;
+
 const Response = require('./src/dto/response');
 
-// CORS 미들웨어 사용
-app.use(cors());
+app.use(cors());  // CORS 미들웨어 사용 (TODO: CORS 정책 변경 요망 / 현재는 모든 ip에 대해 열려있음)
 app.use(express.json());
 
 // TODO: 테스트용 코드 추후 삭제 요망
@@ -18,8 +18,7 @@ app.get('/', (req, res) => {
 });
 
 // data가 1개일 경우 객체 형태로 응답하기
-app.get('/test/single-data', async (req, res) => {
-    
+app.get('/test/single-data', async (req, res) => {    
   await delay(2000);  // 2초 후 응답을 보냅니다
 
   const data = {'id': 1, 'name': '김철수'};
@@ -28,7 +27,6 @@ app.get('/test/single-data', async (req, res) => {
 
 // data가 여러개일 경우 객체의 배열 형태로 응답하기
 app.get('/test/multiple-data', async (req, res) => {
-
   await delay(2000);  // 2초 후 응답을 보냅니다
 
   const data = [

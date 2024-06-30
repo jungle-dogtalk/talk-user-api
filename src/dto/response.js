@@ -25,10 +25,10 @@ class ApiResponse {
     /**
      * 에러 응답을 생성합니다.
      * @param {string} [message="실패"] - 에러 메시지
-     * @param {number} [code=400] - HTTP 에러 코드
+     * @param {number} [code=500] - HTTP 에러 코드
      * @returns {ApiResponse} 에러 응답 객체
      */
-    static error(message = "실패", code = 400) {
+    static error(message = "실패", code = 500) {
       return new ApiResponse(null, message, code);
     }
   }

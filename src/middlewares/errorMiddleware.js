@@ -3,7 +3,7 @@ const BadRequestError = require("../errors/BadRequestError");
 const { INTERNAL_SERVER_ERROR, UNAUTHORIZED } = require('../constants/errorCodes');
 
 const errorHandler = (error, req, res, next) => {
-  console.log(error);
+  console.log('에러내용 -> ', error);
 
   // JWT authentication error
   if (error.name === 'JsonWebTokenError') {

@@ -47,6 +47,10 @@ app.get('/test/multiple-data',
 
 app.get('/test/greeting', 
   tryCatch(async (req, res) => {  
+    if (!req.query.name) {
+      throw new BadRequestError("사용자 이름을 입력해주세요");
+    }
+
     const data = { 'id': 1, 'name': req.query.name };
   
     res.json(Response.success(data, "테스트 성공!"));
@@ -76,6 +80,7 @@ app.get('/test/error-handling',
   })
 )
 
+// 에러핸들링 미들웨어 등록
 app.use(errorHandler)
 
 app.listen(port, () => {

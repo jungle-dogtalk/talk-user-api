@@ -8,6 +8,7 @@ const config = {
   JWT_SECRET: process.env.JWT_SECRET,
   OPENVIDU_URL: process.env.OPENVIDU_URL,
   OPENVIDU_SECRET: process.env.OPENVIDU_SECRET,
+  PYTHON_SERVER_URL: process.env.PYTHON_SERVER_URL,
 };
 
 export default config;

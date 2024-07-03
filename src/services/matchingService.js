@@ -3,7 +3,7 @@ import axios from "axios";
 import config from "../config/config.js";
 
 const calculateOverallSimilarity = async (userA, userB) => {
-  const response = await axios.post(`http://127.0.0.1:6000/similarity`, {
+  const response = await axios.post(`${config.PYTHON_SERVER_URL}/similarity/`, {
     interestsA: userA.interests,
     interestsB: userB.interests,
     listeningA: userA.listeningIndex,

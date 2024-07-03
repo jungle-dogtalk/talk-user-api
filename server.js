@@ -1,5 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
+const fs = require('fs');
+const OpenAI = require('openai');
+
 const app = express();
 const port = 3000;
 
@@ -7,9 +11,29 @@ const Response = require('./src/dto/response');
 const { tryCatch } = require('./src/utils/tryCatch');
 const errorHandler = require('./src/middlewares/errorMiddleware');
 const BadRequestError = require('./src/errors/BadRequestError');
-const OpenAI = require('openai');
 
-let conversation = []; // 대화 누적할 공통 스크립트
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${file.fieldname}-${Date.now()}.webm`);
+    },
+});
+
+const upload = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'audio/webm') {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only webm audio files are allowed.'));
+        }
+    },
+});
+
+let text_conversation = []; // mozilla 대화 누적할 공통 스크립트
+// let audio_conversation = []; // whisper STT 누적 공통 스크립트
 
 // OpenAI 클라이언트 초기화
 const openai = new OpenAI({
@@ -91,7 +115,7 @@ app.post(
     '/send-text',
     tryCatch((req, res) => {
         const { text } = req.body;
-        conversation.push(text);
+        text_conversation.push(text);
         console.log('누적할 텍스트: ', text);
         res.json(Response.success(null, '텍스트 누적 성공'));
     })
@@ -101,7 +125,7 @@ app.post(
 app.post(
     '/ask-ai/title',
     tryCatch(async (req, res) => {
-        const userQuery = conversation.join('. '); // 누적된 대화 스크립트 하나의 문장으로 합침
+        const userQuery = text_conversation.join('. '); // 누적된 대화 스크립트 하나의 문장으로 합침
         console.log('누적된 대화: ', userQuery);
         const startTime = Date.now(); // ai 요청 시작 시간 기록
 
@@ -121,8 +145,8 @@ app.post(
 
         const answer = completion.choices[0].message.content; // AI 응답 가져오기
         const endTime = Date.now(); // ai 요청 종료 시간 기록
-        console.log(`AI 응답 시간: ${endTime - startTime}초`); // 응답 시간 출력
-        conversation = []; // 누적 대화 스크립트 초기화
+        console.log(`AI 응답 시간: ${(endTime - startTime) / 1000}초`); // 응답 시간 출력
+        text_conversation = []; // 누적 대화 스크립트 초기화
         res.json(Response.success(answer, 'AI 응답 성공')); // 커스텀 응답 객체 사용해 응답 반환
     })
 );
@@ -139,13 +163,50 @@ app.post(
                     role: 'user',
                     content:
                         query +
-                        '\n 해당 대화의 맥락을 기준으로 화자가 가지고 있는 관심사를 명사로 특정해서 5개만 말해줘. 영어로 말해주었으면 해.',
+                        '\n 해당 대화의 맥락을 기준으로 화자가 가지고 있는 관심사를 명사로 특정해서 5개만 말해줘.',
                 },
             ],
             max_tokens: 300,
         });
         const answer = completion.choices[0].message.content;
         res.json(Response.success(answer, 'AI 응답 성공'));
+    })
+);
+
+// 오디오 파일 업로드 및 Whisper STT 처리 엔드포인트
+app.post(
+    '/upload-audio',
+    upload.single('file'),
+    tryCatch(async (req, res) => {
+        const audioPath = req.file.path;
+
+        // 파일 정보 로그 추가
+        console.log(`Received file with path: ${audioPath}`);
+        console.log(`File original name: ${req.file.originalname}`);
+        console.log(`File MIME type: ${req.file.mimetype}`);
+        console.log(`File size: ${req.file.size} bytes`);
+
+        const transcription = await openai.audio.transcriptions.create({
+            file: fs.createReadStream(audioPath),
+            model: 'whisper-1',
+        });
+
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [
+                {
+                    role: 'user',
+                    content:
+                        transcription.text +
+                        '\n 해당 대화의 맥락을 기준으로 화자가 가지고 있는 관심사를 명사로 특정해서 5개만 말해줘',
+                },
+            ],
+            max_tokens: 300,
+        });
+        const answer = completion.choices[0].message.content;
+
+        fs.unlinkSync(audioPath); // 파일 삭제
+        res.json(Response.success({ text: transcription.text, answer: answer }, 'STT 성공'));
     })
 );
 

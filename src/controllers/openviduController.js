@@ -1,5 +1,6 @@
 import * as openviduService from '../services/openviduService.js'; // OpenVidu 서비스 모듈을 가져온다.
 
+// 새로운 세션을 생성하는 API 엔드포인트
 export const createSession = async (req, res, next) => {
   try {
     // OpenVidu 서비스의 createSession 메서드를 호출하여 세션을 생성한다. 
@@ -13,6 +14,7 @@ export const createSession = async (req, res, next) => {
   }
 };
 
+// 특정 세션에 대한 토큰을 생성하는 API 엔드포인트
 export const createToken = async (req, res, next) => {
   try {
     

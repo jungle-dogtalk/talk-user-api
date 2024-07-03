@@ -4,6 +4,7 @@ import config from '../config/config.js';
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
 const OV = new OpenVidu(config.OPENVIDU_URL, config.OPENVIDU_SECRET);
 
+// 새로운 세션을 생성
 export const createSession = async () => {
   try {
     // 새로운 세션을 생성하고 생성된 세션 객체 반환
@@ -15,6 +16,7 @@ export const createSession = async () => {
   }
 };
 
+// 주어진 세션 ID에 대한 새로운 토큰을 생성
 export const createToken = async (sessionId) => {
   try {
     

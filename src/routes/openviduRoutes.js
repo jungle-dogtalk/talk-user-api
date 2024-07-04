@@ -1,5 +1,8 @@
 import express from 'express';
-import { createSession, createToken } from '../controllers/openviduController.js';
+import {
+    createSession,
+    createToken,
+} from '../controllers/openviduController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();

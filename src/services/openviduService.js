@@ -9,20 +9,26 @@ const sessionCache = new Map(); // 세션 ID를 캐싱하기 위한 맵
 const tokenCache = new Map(); // 토큰을 캐싱하기 위한 맵
 const CACHE_EXPIRY_TIME = 60 * 60 * 1000; // 1시간
 
+// 네트워크 기반으로 세션을 관리하기 위한 맵
+const networkSessionMap = new Map(); // 네트워크 키를 기반으로 세션 ID를 저장
+
+
 // 새로운 세션을 생성
-export const createSession = async () => {
+export const createSession = async (networkKey) => {
   try {
-
-      // 세션 ID가 캐시에 있는지 확인
-      const cachedSessionId = [...sessionCache.keys()].find(sessionId => Date.now() - sessionCache.get(sessionId) < CACHE_EXPIRY_TIME);
-      
-      if (cachedSessionId) {
-        return cachedSessionId;
+    // 동일 네트워크의 세션이 이미 존재하는지 확인
+    if (networkSessionMap.has(networkKey)) {
+      const { sessionId, timestamp } = networkSessionMap.get(networkKey);
+      // 세션이 만료되지 않았는지 확인
+      if (Date.now() - timestamp < CACHE_EXPIRY_TIME) {
+        return sessionId;
+      } else {
+        networkSessionMap.delete(networkKey); // 만료된 세션 삭제
       }
-
+    }
     // 새로운 세션을 생성하고 생성된 세션 객체 반환
     const session = await OV.createSession();
-    sessionCache.set(session.sessionId, Date.now()); // 캐시에 세션 ID와 현재 시간을 저장
+    networkSessionMap.set(networkKey, { sessionId: session.sessionId, timestamp: Date.now() });
     
     return session.sessionId; // 생성된 세션의 ID 반환
   } catch (error) {
@@ -34,26 +40,33 @@ export const createSession = async () => {
 // 주어진 세션 ID에 대한 새로운 토큰을 생성
 export const createToken = async (sessionId) => {
   try {
+    // 캐시에 저장된 토큰이 있는지 확인
+    if (tokenCache.has(sessionId)) {
+      const { token, timestamp } = tokenCache.get(sessionId);
+      // 토큰이 만료되지 않았는지 확인
+      if (Date.now() - timestamp < CACHE_EXPIRY_TIME) {
+        return token;
+      } else {
+        tokenCache.delete(sessionId); // 만료된 토큰 삭제
+      }
+    }
     
     // 활성 세션 중에서 주어진 세션 ID와 일치하는 세션을 찾음
     const session = OV.activeSessions.find(session => session.sessionId === sessionId);
     
-    // 세션을 찾이 못한 경우 에러를 발생 시킴. 
+    // 세션을 찾지 못한 경우 에러를 발생 시킴
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
     }
 
-    // 토큰이 캐시에 있는지 확인
-    const cachedToken = tokenCache.get(sessionId);
-    if (cachedToken && Date.now() - cachedToken.timestamp < CACHE_EXPIRY_TIME) {
-      return cachedToken.token;
-    }
-
     // 해당 세션에 대한 새로운 연결을 생성하고, 생성된 연결 객체 반환
     const connection = await session.createConnection();
-    tokenCache.set(sessionId, { token: connection.token, timestamp: Date.now() }); // 캐시에 토큰과 현재 시간을 저장
-    return connection.token;
+    const token = connection.token;
 
+    // 토큰을 캐시에 저장
+    tokenCache.set(sessionId, { token, timestamp: Date.now() });
+    
+    return token;
   } catch (error) {
     console.error('Error creating token:', error);
     throw error;
@@ -64,17 +77,19 @@ export const createToken = async (sessionId) => {
 setInterval(() => {
   const now = Date.now(); // 현재 시간을 밀리초 단위로 가져옴
 
-  sessionCache.forEach((timestamp, sessionId) => {
-
-    if (now - timestamp > CACHE_EXPIRY_TIME) { // 현재 시간과 세션 생성 시간을 비교하여 만료 여부 확인
-      sessionCache.delete(sessionId); // 만료된 세션 ID를 캐시에서 삭제
+  // 만료된 세션 삭제
+  networkSessionMap.forEach(({ timestamp }, networkKey) => {
+    if (now - timestamp > CACHE_EXPIRY_TIME) {
+      networkSessionMap.delete(networkKey);
+      console.log(`Deleted expired session for network key: ${networkKey}`);
     }
   });
 
-  tokenCache.forEach((data, sessionId) => {
-
-    if (now - data.timestamp > CACHE_EXPIRY_TIME) { // 현재 시간과 토큰 생성 시간을 비교하여 만료 여부 확인
-      tokenCache.delete(sessionId); // 만료된 토큰을 캐시에서 삭제
+  // 만료된 토큰 삭제
+  tokenCache.forEach(({ timestamp }, sessionId) => {
+    if (now - timestamp > CACHE_EXPIRY_TIME) {
+      tokenCache.delete(sessionId);
+      console.log(`Deleted expired token for session ID: ${sessionId}`);
     }
   });
 }, 60 * 60 * 1000); // 1시간마다 실행

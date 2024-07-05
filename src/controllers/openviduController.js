@@ -4,7 +4,7 @@ import * as openviduService from '../services/openviduService.js'; // OpenVidu ì
 export const createSession = async (req, res, next) => {
   try {
       console.log('Creating session for user:', req.user);
-      const sessionId = await openviduService.createSession();
+      const sessionId = await openviduService.assignSession();
       console.log('Created session ID:', sessionId);
       res.status(200).json({ sessionId });
   } catch (error) {

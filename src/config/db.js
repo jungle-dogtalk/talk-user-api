@@ -25,6 +25,8 @@ const connectDB = {
             process.exit(1); // 데이터베이스 연결 실패 시 프로세스를 종료
         }
     },
+};
+const connectRedis = {
     connectRedis: async () => {
         try {
             // TODO: 추후 관련 DB 설정값들 환경변수 쪽으로 옮기기
@@ -35,7 +37,7 @@ const connectDB = {
                 retryStrategy(times) {
                     const delay = Math.min(times * 50, 2000);
                     return delay;
-                }
+                },
             });
 
             redis.on('connect', () => {
@@ -52,6 +54,6 @@ const connectDB = {
             process.exit(1); // 데이터베이스 연결 실패 시 프로세스를 종료
         }
     },
-}
+};
 
-export default connectDB;
+export { connectDB, connectRedis };

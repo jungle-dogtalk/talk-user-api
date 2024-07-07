@@ -1,5 +1,7 @@
 import TestUser from '../models/TestMatching.js'; // 테스트용 모델을 임포트
 import { findBestMatch } from '../services/matchingService.js';
+import { redisClient, redisSub } from '../../server.js';
+import ApiResponse from '../dto/response.js';
 
 const getUserMatch = async (req, res) => {
     const userId = req.params.userId;
@@ -20,4 +22,16 @@ const getUserMatch = async (req, res) => {
     res.json({ bestMatch });
 };
 
-export { getUserMatch };
+const addUserToQueue = async (req, res) => {
+    const userId = req.body.userId;
+    const queueLength = await redisClient.lpush('waiting_queue', userId);
+
+    if (queueLength % 4 === 0) {
+        // 4명이 찼을 때 매칭 프로세스 트리거
+        redisClient.publish('matchmaking', 'match');
+    }
+
+    return res.json(ApiResponse.success(null, userId + ' 유저 대기큐 진입'));
+}
+
+export { getUserMatch, addUserToQueue };

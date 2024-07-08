@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true }, // 사용자 이름 필드
     password: { type: String, required: true }, // 비밀번호 필드
     name: { type: String, required: true }, // 이름 필드
+    nickname: { type: String, required: true }, // 닉네임 필드
     email: { type: String, required: true, unique: true }, // 이메일 필드
     interests: [String], // 관심사 필드 (배열)
     profileImage: { type: String, required: false }, // 프로필 이미지 URL 필드 (선택)

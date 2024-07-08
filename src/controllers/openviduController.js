@@ -6,7 +6,13 @@ export const createSession = async (req, res, next) => {
         // console.log('Creating session for user:', req.user);
         const sessionId = await openviduService.createSession();
         // console.log('Created session ID:', sessionId);
-        return sessionId;
+        // return sessionId;
+
+        res.status(200).json({
+            data: sessionId,
+        });
+
+
     } catch (error) {
         console.error('Error creating session:', error);
 

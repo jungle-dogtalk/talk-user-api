@@ -1,8 +1,8 @@
-import { OpenVidu } from 'openvidu-node-client';
-import config from '../config/config.js';
+// import { OpenVidu } from 'openvidu-node-client';
+// import config from '../config/config.js';
+import { OV } from '../app.js';
 
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
-const OV = new OpenVidu(config.OPENVIDU_URL, config.OPENVIDU_SECRET);
 
 const sessions = [];
 const MAX_USERS_PER_SESSION = 4; // 세션 당 최대 사용자 수
@@ -10,8 +10,6 @@ const MAX_USERS_PER_SESSION = 4; // 세션 당 최대 사용자 수
 // 그냥 매번 새롭게 세션을 만듬
 export const createSession = async () => {
   try {
-    const sessions = await OV.fetch();
-
     console.log('Creating new session');
     const session = await OV.createSession();
     console.log('Created new session:', session.sessionId);
@@ -34,14 +32,30 @@ export const assignSession = async () => {
   return session.session.sessionId;
 };
 
-export const createToken = async (sessionId) => {
+export const createToken = async (sid) => {
   try {
-    console.log('Creating token for sessionId:', sessionId);
-    const session = OV.activeSessions.find(session => session.sessionId === sessionId);
+    console.log('Creating token for sessionId:', sid);
+    const sessions = await OV.fetch();
+    console.log('가용 세션 리스트? -> ', sessions);
+
+    const session = OV.activeSessions.find(
+      (s) => s.sessionId === sid
+    );
     if (!session) {
-      throw new Error(`Session not found: ${sessionId}`);
+      throw new Error(`Session not found: ${sid}`);
     }
-    const connection = await session.createConnection();
+
+    const randomUser = 'user' + Math.floor(Math.random() * 1000);
+
+    const connectionProperties = {
+      role: "PUBLISHER",
+      data: randomUser,
+      kurentoOptions: {
+        allowedFilters: ["GStreamerFilter", "FaceOverlayFilter"]
+      }
+    };
+
+    const connection = await session.createConnection(connectionProperties);
     return connection.token;
   } catch (error) {
     console.error('Error creating token:', error);

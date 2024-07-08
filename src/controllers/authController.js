@@ -2,36 +2,56 @@ import * as authService from '../services/authService.js'; // 인증 서비스 �
 
 // 회원가입 엔드포인트 핸들러
 export const register = async (req, res) => {
-
     // Multer 미들웨어를 사용하여 파일 업로드 처리
     authService.uploadMiddleware(req, res, async (err) => {
-      if (err) {
-        console.error('Multer error:', err); // 파일 업로드 중 에러 로그
-        return res.status(500).json({ error: err.message });
-      }
-  
-      const { username, password, name, email, interests, nickname } = req.body;
-      const profileImage = req.file;
-  
-      try {
-        const userData = {
-            username,
-            password,
-            name,
-            email,
-            interests,
-            nickname,
-            profileImage,
-          };
-        const { token, user } = await authService.register(userData);
-  
-        res.status(201).json({ token, user });
-      } catch (error) {
-        console.error('Error during registration:', error);
-        res.status(500).json({ error: error.message });
-      }
+        if (err) {
+            console.error('Multer error:', err); // 파일 업로드 중 에러 로그
+            return res.status(500).json({ error: err.message });
+        }
+
+        const { username, password, name, email, interests, nickname } =
+            req.body;
+        const profileImage = req.file;
+
+        try {
+            const userData = {
+                username,
+                password,
+                name,
+                email,
+                interests,
+                nickname,
+                profileImage,
+            };
+            const { token, user } = await authService.register(userData);
+
+            res.status(201).json({ token, user });
+        } catch (error) {
+            console.error('Error during registration:', error);
+            res.status(500).json({ error: error.message });
+        }
     });
-  };
+};
+
+// 아이디 중복 검사 엔드포인트 핸들러
+export const checkUsername = async (req, res) => {
+    const { username } = req.body;
+    try {
+        const exists = await authService.checkUsername(username);
+        res.status(200).json({
+            code: 200,
+            status: true,
+            data: exists,
+            message: exists
+                ? '중복되는 ID가 있습니다.'
+                : '사용가능한 ID입니다.',
+        });
+    } catch (error) {
+        console.error('Error during username check:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 // 아이디 중복 검사 엔드포인트 핸들러
 export const checkUsername = async (req, res) => {

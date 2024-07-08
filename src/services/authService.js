@@ -115,15 +115,30 @@ export const login = async ({ username, password }) => {
         }
 
         // 입력된 비밀번호와 저장된 비밀번호 비교
-        // const isMatch = await bcrypt.compare(password, user.password);
-        // if (!isMatch) {
-        //     console.log('Password does not match');
-        //     throw new Error('Invalid username or password');
-        // }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            console.log('Password does not match');
+            throw new Error('Invalid username or password');
+        }
         const token = generateToken(user); // 로그인 시 토큰 생성
         return { token, user };
     } catch (error) {
         console.error('Error during login:', error);
         throw error;
+    }
+};
+
+// 사용자 중복 검사 함수 추가
+export const checkUsername = async (username) => {
+    const user = await User.findOne({ username });
+    return user ? true : false;
+};
+
+// 사용자 삭제 로직
+export const deleteUserById = async (userId) => {
+    try {
+        await User.findByIdAndDelete(userId); // MongoDB에서 사용자 삭제
+    } catch (error) {
+        throw new Error('Error deleting user: ' + error.message);
     }
 };

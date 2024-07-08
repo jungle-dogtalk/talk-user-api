@@ -20,8 +20,8 @@ export const register = async (req, res) => {
                 name,
                 email,
                 interests,
-                //nickname,
-                //profileImage,
+                nickname,
+                profileImage,
             };
             const { token, user } = await authService.register(userData);
 
@@ -31,6 +31,25 @@ export const register = async (req, res) => {
             res.status(500).json({ error: error.message });
         }
     });
+};
+
+// 아이디 중복 검사 엔드포인트 핸들러
+export const checkUsername = async (req, res) => {
+    const { username } = req.body;
+    try {
+        const exists = await authService.checkUsername(username);
+        res.status(200).json({
+            code: 200,
+            status: true,
+            data: exists,
+            message: exists
+                ? '중복되는 ID가 있습니다.'
+                : '사용가능한 ID입니다.',
+        });
+    } catch (error) {
+        console.error('Error during username check:', error);
+        res.status(500).json({ error: error.message });
+    }
 };
 
 // 로그인 엔드포인트 핸들러
@@ -54,5 +73,19 @@ export const login = async (req, res, next) => {
     } catch (error) {
         console.error('Error during login:', error); // 로그인 중 에러 로그
         res.status(500).json({ error: error.message }); // 에러 응답
+    }
+};
+
+// 계정 삭제 엔드포인트 핸들러
+export const deleteAccount = async (req, res) => {
+    try {
+        const userId = req.user.id; // JWT 토큰에서 사용자 ID 추출
+        await authService.deleteUserById(userId); // 서비스에서 사용자 삭제 로직 호출
+
+        // 성공 응답 반환
+        res.status(200).json({ message: 'Account deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).json({ error: error.message });
     }
 };

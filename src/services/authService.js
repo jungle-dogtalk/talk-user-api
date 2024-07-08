@@ -122,3 +122,11 @@ export const login = async ({ username, password }) => {
         throw error;
     }
 };
+
+// 사용자 중복 검사 함수 추가
+export const checkUsername = async (username) => {
+    const user = await User.findOne({ username });
+    return user ? true : false;
+};
+
+

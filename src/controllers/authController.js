@@ -33,6 +33,23 @@ export const register = async (req, res) => {
     });
   };
 
+// 아이디 중복 검사 엔드포인트 핸들러
+export const checkUsername = async (req, res) => {
+  const { username } = req.body;
+  try {
+      const exists = await authService.checkUsername(username);
+      res.status(200).json({ 
+        code: 200,
+        status: true,
+        data: exists,
+        message: exists? "중복되는 ID가 있습니다.":"사용가능한 ID입니다."
+       });
+  } catch (error) {
+      console.error('Error during username check:', error);
+      res.status(500).json({ error: error.message });
+  }
+};
+
   // 로그인 엔드포인트 핸들러
   export const login = async (req, res, next) => {
     try {

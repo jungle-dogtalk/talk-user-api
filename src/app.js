@@ -9,6 +9,10 @@ import audioRoutes from './routes/audioRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { OpenVidu } from 'openvidu-node-client';
+import config from './config/config.js';
+
+// OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
 
 const app = express();
 const server = createServer(app);
@@ -22,6 +26,8 @@ const io = new Server(server, {
 app.use(bodyParser.json());
 app.use(cors());
 
+const OV = new OpenVidu(config.OPENVIDU_URL, config.OPENVIDU_SECRET);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
@@ -33,4 +39,5 @@ app.use('/api/audio', audioRoutes);
 app.use(errorHandler);
 
 export default app;
-export { server, io };
+export { server, io, OV };
+

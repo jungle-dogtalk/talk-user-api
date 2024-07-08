@@ -3,6 +3,7 @@ import {
     receiveTranscript,
     getTranscripts,
     recommendTopics,
+    endCall,
 } from '../controllers/audioController.js';
 
 const router = express.Router();
@@ -13,5 +14,7 @@ router.post('/receive-transcript', receiveTranscript);
 router.get('/transcripts', getTranscripts);
 // 주제 추천 요청 라우트
 router.post('/recommend-topics', recommendTopics);
+// 통화 종료 시 관심사 특정 요청 라우트
+router.post('/end-call', endCall);
 
 export default router;

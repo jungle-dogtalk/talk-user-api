@@ -73,3 +73,18 @@ export const checkUsername = async (req, res) => {
         res.status(500).json({ error: error.message }); // 에러 응답
     }
 };
+
+// 계정 삭제 엔드포인트 핸들러
+export const deleteAccount = async (req, res) => {
+  try {
+
+      const userId = req.user.id; // JWT 토큰에서 사용자 ID 추출
+      await authService.deleteUserById(userId); // 서비스에서 사용자 삭제 로직 호출
+
+      // 성공 응답 반환
+      res.status(200).json({ message: 'Account deleted successfully' });
+  } catch (error) {
+      console.error('Error deleting account:', error);
+      res.status(500).json({ error: error.message });
+  }
+};

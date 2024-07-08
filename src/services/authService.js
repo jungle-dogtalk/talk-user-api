@@ -130,3 +130,11 @@ export const checkUsername = async (username) => {
 };
 
 
+// 사용자 삭제 로직
+export const deleteUserById = async (userId) => {
+    try {
+        await User.findByIdAndDelete(userId); // MongoDB에서 사용자 삭제
+    } catch (error) {
+        throw new Error('Error deleting user: ' + error.message);
+    }
+};

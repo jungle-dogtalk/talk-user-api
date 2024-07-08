@@ -1,19 +1,21 @@
 import TestUser from '../models/TestMatching.js'; // 테스트용 모델을 임포트
 import axios from 'axios';
 import config from '../config/config.js';
+import { connectRedis } from '../config/db.js';
 
-const calculateOverallSimilarity = async (userA, userB) => {
+const calculateSimilarity = async (userA, userB) => {
     const response = await axios.post(
         `${config.PYTHON_SERVER_URL}/similarity/`,
         {
             interestsA: userA.interests,
             interestsB: userB.interests,
-            listeningA: userA.listeningIndex,
-            listeningB: userB.listeningIndex,
-            speakingA: userA.speakingIndex,
-            speakingB: userB.speakingIndex,
-        },
+            // listeningA: userA.listeningIndex,
+            // listeningB: userB.listeningIndex,
+            // speakingA: userA.speakingIndex,
+            // speakingB: userB.speakingIndex,
+        }
     );
+    // console.log(userA.interests);
 
     return response.data.similarity;
 };
@@ -25,13 +27,10 @@ const findBestMatch = async (user) => {
 
     for (const otherUser of users) {
         if (otherUser._id.toString() !== user._id.toString()) {
-            const similarity = await calculateOverallSimilarity(
-                user,
-                otherUser,
-            );
+            const similarity = await calculateSimilarity(user, otherUser);
             console.log(
                 `User ${user._id} - User ${otherUser._id} Similarity:`,
-                similarity,
+                similarity
             );
             if (similarity > highestSimilarity) {
                 highestSimilarity = similarity;
@@ -45,4 +44,4 @@ const findBestMatch = async (user) => {
     return bestMatch;
 };
 
-export { findBestMatch };
+export { calculateSimilarity, findBestMatch };

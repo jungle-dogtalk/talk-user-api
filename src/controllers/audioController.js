@@ -1,18 +1,29 @@
 import * as audioService from '../services/audioService.js';
 import ApiResponse from '../dto/response.js';
 
-// 다수 인원 전체 대화 스크립트
-let fullTranscriptList = [];
-// 주제 추천 전까지의 대화 스크립트
-let transcriptList = [];
+// 세션 별 대화 내용 저장 스크립트
+let sessionTranscripts = {};
 
 // 클라이언트로부터 텍스트를 받아서 저장하는 함수
 export const receiveTranscript = (req, res) => {
-    const { username, transcript } = req.body;
+    const { username, transcript, sessionId } = req.body;
+    if (!sessionTranscripts[sessionId]) {
+        sessionTranscripts[sessionId] = { full: [], partial: [] };
+    }
+    // full은 전체 대화 내용, patial은 주제 추천 받기 전까지의 대화내용(즉 주제 추천 받을 시 초기화)
     if (transcript) {
-        transcriptList.push({ username, transcript });
-        fullTranscriptList.push({ username, transcript });
-        res.json(ApiResponse.success(transcriptList, 'Transcript received'));
+        sessionTranscripts[sessionId].full.push({ username, transcript });
+        sessionTranscripts[sessionId].partial.push({ username, transcript });
+        console.log(
+            'receiveTranscript - sessionTranscripts:',
+            sessionTranscripts
+        );
+        res.json(
+            ApiResponse.success(
+                sessionTranscripts[sessionId].partial,
+                'Transcript received'
+            )
+        );
     } else {
         res.status(400).json(ApiResponse.error('No transcript provided'));
     }
@@ -20,18 +31,46 @@ export const receiveTranscript = (req, res) => {
 
 // 공통 스크립트를 반환하는 함수
 export const getTranscripts = (req, res) => {
-    res.json(ApiResponse.success(transcriptList, 'Transcripts retrieved'));
+    const { sessionId } = req.query;
+    if (sessionId && sessionTranscripts[sessionId]) {
+        res.json(
+            ApiResponse.success(
+                sessionTranscripts[sessionId].partial,
+                'Transcripts retrieved'
+            )
+        );
+    } else {
+        res.status(404).json(ApiResponse.error('Session not found'));
+    }
 };
 
-// 통화 종료 시 관심사 도출 및 각 클라이언트에 전송
+// 특정 사용자의 관심사 도출 및 전송
 export const endCall = async (req, res) => {
     try {
-        const { username } = req.body;
+        const { username, sessionId } = req.body;
+        console.log('------username: ', username);
+        console.log('------sessionId: ', sessionId);
+        const sessionData = sessionTranscripts[sessionId];
+
+        console.log('------sessionData: ', sessionData);
+
+        if (!sessionData) {
+            console.log('No sessionData');
+            return res.status(404).json(ApiResponse.error('Session not found'));
+        }
 
         // username 별로 발언들을 모으기: reduce를 이용해 username 별 그룹화된 객체로 변환
-        const transcriptsByUsername = fullTranscriptList.reduce((acc, item) => {
+        const transcriptsByUsername = sessionData.full.reduce((acc, item) => {
+            console.log('item:', item);
             if (!acc[item.username]) {
+                console.log(
+                    `Initializing array for username: ${item.username}`
+                );
                 acc[item.username] = [];
+            } else {
+                console.log(
+                    `Appending to existing array for username: ${item.username}`
+                );
             }
             acc[item.username].push(item.transcript);
             return acc;
@@ -39,35 +78,14 @@ export const endCall = async (req, res) => {
 
         console.log('username별 스크립트:', transcriptsByUsername);
 
-        // map 함수로 각 [username, transcripts] 쌍에 대해 관심사 도출
-        const interestPromises = Object.entries(transcriptsByUsername).map(
-            async ([name, transcripts]) => {
-                const transcriptText = transcripts.join('\n');
-                const interests = await audioService.getInterest(
-                    transcriptText
-                );
-                return { username: name, interests };
-            }
-        );
-
-        const interests = await Promise.all(interestPromises);
+        // 요청한 사용자의 발언을 기반으로 관심사 도출
+        const userTranscripts = transcriptsByUsername[username] || [];
+        const transcriptText = userTranscripts.join('\n');
+        const interests = await audioService.getInterest(transcriptText);
 
         console.log('Interests:', interests);
 
-        // 요청한 클라이언트의 username에 맞는 관심사만 전송
-        const clientInterests = interests.find(
-            (interest) => interest.username === username
-        );
-
-        if (!clientInterests) {
-            return res
-                .status(404)
-                .json(
-                    ApiResponse.error(
-                        'No interests found for the provided username'
-                    )
-                );
-        }
+        const clientInterests = { username, interests };
 
         res.json(
             ApiResponse.success(
@@ -75,10 +93,6 @@ export const endCall = async (req, res) => {
                 'Call ended and interests sent.'
             )
         );
-
-        // 전체 대화 내용 초기화
-        fullTranscriptList = [];
-        transcriptList = [];
     } catch (error) {
         console.error('Error ending call and fetching interests:', error);
         res.status(500).json(
@@ -89,7 +103,14 @@ export const endCall = async (req, res) => {
 
 // 주제 추천 요청을 처리하는 함수
 export const recommendTopics = async (req, res) => {
-    const conversation = transcriptList
+    const { sessionId } = req.body;
+    const sessionData = sessionTranscripts[sessionId];
+
+    if (!sessionData) {
+        return res.status(404).json(ApiResponse.error('Session not found'));
+    }
+
+    const conversation = sessionData.partial
         .map((item) => `${item.username}: ${item.transcript}`)
         .join('\n');
     console.log('대화 스크립트: ', conversation);
@@ -98,7 +119,7 @@ export const recommendTopics = async (req, res) => {
             conversation
         );
         res.json(response);
-        transcriptList = [];
+        sessionData.partial = []; // 주제 추천 후 partial 리스트 초기화
     } catch (error) {
         console.error('Error fetching topic recommendations:', error);
         res.status(500).json(
@@ -107,5 +128,16 @@ export const recommendTopics = async (req, res) => {
                 error.message
             )
         );
+    }
+};
+
+// 모든 사용자가 나갔을 때 스크립트를 초기화하는 함수
+export const clearTranscriptsForSession = (sessionId) => {
+    console.log('사용자가 다 나간다면');
+    if (sessionTranscripts[sessionId]) {
+        delete sessionTranscripts[sessionId];
+        console.log(`Transcripts for session ${sessionId} have been cleared.`);
+    } else {
+        console.log(`No transcripts found for session ${sessionId}`);
     }
 };

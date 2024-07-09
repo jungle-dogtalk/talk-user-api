@@ -4,7 +4,7 @@ import ApiResponse from '../dto/response.js';
 
 // OpenAI 설정
 const openai = new OpenAI({
-    apiKey: 'openAI apikey 문의는 심우정에게 부탁드립니다!',
+    apiKey: 'OpenAI API Key 문의는 심우정에게 부탁드립니다@@',
 });
 
 export const getTopicRecommendations = async (conversation) => {

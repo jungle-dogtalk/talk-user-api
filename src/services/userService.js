@@ -78,3 +78,16 @@ export const updateUserProfile = async (userId, file, interests) => {
         throw new Error('Error updating user profile: ' + error.message);
     }
 };
+
+// 사용자 정보를 조회하는 함수
+export const getUserProfile = async (userId) => {
+    try {
+        // 사용자 정보를 조회
+        const user = await User.findById(userId);
+
+        // 조회된 사용자 정보를 반환
+        return user;
+    } catch (error) {
+        throw new Error('Error fetching user profile: ' + error.message);
+    }
+};

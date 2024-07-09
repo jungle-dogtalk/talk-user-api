@@ -35,3 +35,21 @@ export const updateProfile = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+// 사용자 정보 조회 엔드포인트 핸들러
+export const getUserProfile = async (req, res) => {
+    try {
+        // 인증된 사용자의 ID를 req.user에서 추출
+        const userId = req.user.id;
+
+        // 사용자 정보를 조회하는 서비스 함수 호출
+        const user = await userService.getUserProfile(userId);
+
+        // 조회된 사용자 정보를 클라이언트에 반환
+        res.status(200).json({ user });
+    } catch (error) {
+        // 사용자 정보 조회 중 에러가 발생한 경우 로그를 남기고 500 상태 코드와 에러 메시지 반환
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ error: error.message });
+    }
+};

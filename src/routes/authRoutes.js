@@ -14,6 +14,10 @@ router.post('/signup', authController.register);
 router.post('/check-username', authController.checkUsername);
 
 // 계정 삭제 엔드포인트
-router.delete('/account-deletion', authMiddleware, authController.deleteAccount);
+router.delete(
+    '/account-deletion',
+    authMiddleware,
+    authController.deleteAccount
+);
 
 export default router; // 라우터를 모듈로 내보내기.

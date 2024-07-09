@@ -40,4 +40,3 @@ app.use(errorHandler);
 
 export default app;
 export { server, io, OV };
-

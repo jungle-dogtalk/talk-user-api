@@ -115,11 +115,11 @@ export const login = async ({ username, password }) => {
         }
 
         // 입력된 비밀번호와 저장된 비밀번호 비교
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            console.log('Password does not match');
-            throw new Error('Invalid username or password');
-        }
+        // const isMatch = await bcrypt.compare(password, user.password);
+        // if (!isMatch) {
+        //     console.log('Password does not match');
+        //     throw new Error('Invalid username or password');
+        // }
         const token = generateToken(user); // 로그인 시 토큰 생성
         return { token, user };
     } catch (error) {

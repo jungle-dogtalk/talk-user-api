@@ -52,7 +52,7 @@ redisSub.on('message', async (channel, message) => {
                 //     // userId가 null 또는 undefined일 때
                 //     userId = user._id.toString();
                 // }
-                console.log('유저', userId);
+                // console.log('유저', userId);
                 const socketId = userSocketMap.get(userId);
                 console.log(userSocketMap);
                 console.log('세션', sessionId);
@@ -64,22 +64,6 @@ redisSub.on('message', async (channel, message) => {
                 }
             }
         }
-        // // 큐에서 4명의 사용자 가져오기
-        // const users = await redisClient.lrange('waiting_queue', -4, -1);
-        // await redisClient.ltrim('waiting_queue', 0, -5);
-
-        // // OpenVidu 세션 생성 (OpenVidu API에 맞게 구현 필요)
-        // const sessionId = await createSession();
-
-        // // 매칭된 사용자들에게 세션 ID 전송
-        // // io.emit('matched', { sessionId });        
-        // users.forEach(userId => {
-        //     const socketId = userSocketMap.get(userId);
-        //     if (socketId) {
-        //         io.to(socketId).emit('matched', { sessionId });
-        //     }
-        // });
-
     }
     console.log('마지막', userSocketMap);
 });

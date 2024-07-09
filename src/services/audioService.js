@@ -1,11 +1,14 @@
 import fs from 'fs'; // 파일 시스템 모듈 -> 파일 읽고 쓸 수 있음
 import OpenAI from 'openai';
 import ApiResponse from '../dto/response.js';
+import dotenv from "dotenv";
+
 
 // OpenAI 설정
 const openai = new OpenAI({
-    apiKey: 'OpenAI API Key 문의는 심우정에게 부탁드립니다@@',
+    apiKey: `${process.env.Open_API_KEY}`,
 });
+
 
 export const getTopicRecommendations = async (conversation) => {
     const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n 이 대화 흐름에 맞게 다음으로 이 사람들이 얘기하기 좋을만한 주제를 5가지 정도 추천해줘.`;

@@ -11,6 +11,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { OpenVidu } from 'openvidu-node-client';
 import config from './config/config.js';
+import 'dotenv/config';
+
 
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
 import {

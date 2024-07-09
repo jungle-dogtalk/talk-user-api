@@ -4,7 +4,7 @@ import ApiResponse from '../dto/response.js';
 
 // OpenAI 설정
 const openai = new OpenAI({
-    apiKey: 'openai key 문의는 심우정에게 부탁드립니다.',
+    apiKey: 'OpenAI API Key 문의는 심우정에게 부탁드립니다@@',
 });
 
 export const getTopicRecommendations = async (conversation) => {
@@ -28,5 +28,33 @@ export const getTopicRecommendations = async (conversation) => {
     } catch (error) {
         console.error('Error fetching topic recommendations:', error);
         throw ApiResponse.error('주제 추천 실패', 500);
+    }
+};
+
+export const getInterest = async (transcript) => {
+    const prompt = `'${transcript}'이 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5가지 정도 특정해줘, 명사로 부탁해.`;
+    console.log('관심사 특정 요청: ', prompt);
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 200,
+            n: 1,
+            temperature: 0.7,
+        });
+
+        // console.log('관심사 요청 AI 응답:', response);
+
+        const interestsText = response.choices[0].message.content.trim();
+        const interests = interestsText
+            .split('\n')
+            .map((interest) => interest.trim())
+            .filter((interest) => interest.length > 0);
+
+        console.log('관심사 요청 AI 반환값:', interests);
+        return interests;
+    } catch (error) {
+        console.error('Error fetching interests:', error);
+        throw ApiResponse.error('Failed to fetch interests', 500);
     }
 };

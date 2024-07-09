@@ -72,14 +72,13 @@ redisSub.on('message', async (channel, message) => {
         // const sessionId = await createSession();
 
         // // 매칭된 사용자들에게 세션 ID 전송
-        // // io.emit('matched', { sessionId });        
+        // // io.emit('matched', { sessionId });
         // users.forEach(userId => {
         //     const socketId = userSocketMap.get(userId);
         //     if (socketId) {
         //         io.to(socketId).emit('matched', { sessionId });
         //     }
         // });
-
     }
     console.log('마지막', userSocketMap);
 });

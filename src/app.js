@@ -13,7 +13,10 @@ import { OpenVidu } from 'openvidu-node-client';
 import config from './config/config.js';
 
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
-import { clearTranscriptsForSession } from './controllers/audioController.js';
+import {
+    clearTranscriptsForSession,
+    recommendTopics,
+} from './controllers/audioController.js';
 
 const app = express();
 const server = createServer(app);
@@ -50,6 +53,7 @@ io.on('connection', (socket) => {
             activeUsers[sessionId] = new Set();
         }
         activeUsers[sessionId].add(socket.id);
+        socket.join(sessionId); // 해당 sessionId에 들어감 (그룹화)
         console.log(`User ${socket.id} joined session ${sessionId}`);
     });
 
@@ -57,6 +61,7 @@ io.on('connection', (socket) => {
     socket.on('leaveSession', (sessionId) => {
         if (activeUsers[sessionId]) {
             activeUsers[sessionId].delete(socket.id);
+            socket.leave(sessionId); // 해당 sessionId에서 떠남
             console.log(`User ${socket.id} left session ${sessionId}`);
 
             if (activeUsers[sessionId].size === 0) {
@@ -68,6 +73,12 @@ io.on('connection', (socket) => {
                 );
             }
         }
+    });
+
+    // 클라이언트에서 발생한 주제 추천 요청 이벤트 수신
+    socket.on('requestTopicRecommendations', (data) => {
+        const { sessionId } = data;
+        recommendTopics(sessionId);
     });
 
     // 세션에서 연결을 끊을 때

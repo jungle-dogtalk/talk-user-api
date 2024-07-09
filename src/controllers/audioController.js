@@ -1,5 +1,6 @@
 import * as audioService from '../services/audioService.js';
 import ApiResponse from '../dto/response.js';
+import { io } from '../app.js';
 
 // 세션 별 대화 내용 저장 스크립트
 let sessionTranscripts = {};
@@ -48,11 +49,7 @@ export const getTranscripts = (req, res) => {
 export const endCall = async (req, res) => {
     try {
         const { username, sessionId } = req.body;
-        console.log('------username: ', username);
-        console.log('------sessionId: ', sessionId);
         const sessionData = sessionTranscripts[sessionId];
-
-        console.log('------sessionData: ', sessionData);
 
         if (!sessionData) {
             console.log('No sessionData');
@@ -102,12 +99,12 @@ export const endCall = async (req, res) => {
 };
 
 // 주제 추천 요청을 처리하는 함수
-export const recommendTopics = async (req, res) => {
-    const { sessionId } = req.body;
+export const recommendTopics = async (sessionId) => {
     const sessionData = sessionTranscripts[sessionId];
 
     if (!sessionData) {
-        return res.status(404).json(ApiResponse.error('Session not found'));
+        console.error('Session not found');
+        return;
     }
 
     const conversation = sessionData.partial
@@ -118,16 +115,11 @@ export const recommendTopics = async (req, res) => {
         const response = await audioService.getTopicRecommendations(
             conversation
         );
-        res.json(response);
+        // 해당 세션에 그룹되어 있는 모든 클라이언트에게 주제 추천 결과 전송
+        io.to(sessionId).emit('topicRecommendations', response);
         sessionData.partial = []; // 주제 추천 후 partial 리스트 초기화
     } catch (error) {
         console.error('Error fetching topic recommendations:', error);
-        res.status(500).json(
-            ApiResponse.error(
-                'Failed to fetch topic recommendations',
-                error.message
-            )
-        );
     }
 };
 

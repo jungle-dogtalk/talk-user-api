@@ -4,6 +4,8 @@ import { io } from '../app.js';
 
 // 세션 별 대화 내용 저장 스크립트
 let sessionTranscripts = {};
+// partial Script 배열 제한
+const MAX_TRANSCRIPT = 5;
 
 // 클라이언트로부터 텍스트를 받아서 저장하는 함수
 export const receiveTranscript = (req, res) => {
@@ -14,11 +16,21 @@ export const receiveTranscript = (req, res) => {
     // full은 전체 대화 내용, patial은 주제 추천 받기 전까지의 대화내용(즉 주제 추천 받을 시 초기화)
     if (transcript) {
         sessionTranscripts[sessionId].full.push({ username, transcript });
+        console.log(
+            '주제 스크립트 배열 크기: ',
+            sessionTranscripts[sessionId].partial.length
+        );
+        if (sessionTranscripts[sessionId].partial.length >= MAX_TRANSCRIPT) {
+            sessionTranscripts[sessionId].partial.shift();
+        }
         sessionTranscripts[sessionId].partial.push({ username, transcript });
+
         console.log(
             'receiveTranscript - sessionTranscripts:',
             sessionTranscripts
         );
+
+        console.log('주제 스크립트: ', sessionTranscripts[sessionId].partial);
         res.json(
             ApiResponse.success(
                 sessionTranscripts[sessionId].partial,

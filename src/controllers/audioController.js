@@ -90,7 +90,7 @@ export const endCall = async (req, res) => {
         // 요청한 사용자의 발언을 기반으로 관심사 도출
         const userTranscripts = transcriptsByUsername[username] || [];
         const transcriptText = userTranscripts.join('\n');
-        const interests = await audioService.getInterest(transcriptText);
+        const interests = await audioService.getInterest(username, transcriptText);
 
         console.log('Interests:', interests);
 

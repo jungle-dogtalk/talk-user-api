@@ -2,7 +2,7 @@ import fs from 'fs'; // 파일 시스템 모듈 -> 파일 읽고 쓸 수 있음
 import OpenAI from 'openai';
 import ApiResponse from '../dto/response.js';
 import dotenv from "dotenv";
-
+import User from '../models/User.js'; // 사용자 모델 가져오기
 
 // OpenAI 설정
 const openai = new OpenAI({
@@ -34,7 +34,7 @@ export const getTopicRecommendations = async (conversation) => {
     }
 };
 
-export const getInterest = async (transcript) => {
+export const getInterest = async (username, transcript) => {
     const prompt = `'${transcript}'이 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5가지 정도 특정해줘, 명사로 부탁해.`;
     console.log('관심사 특정 요청: ', prompt);
     try {
@@ -46,15 +46,28 @@ export const getInterest = async (transcript) => {
             temperature: 0.7,
         });
 
-        // console.log('관심사 요청 AI 응답:', response);
-
         const interestsText = response.choices[0].message.content.trim();
         const interests = interestsText
             .split('\n')
             .map((interest) => interest.trim())
             .filter((interest) => interest.length > 0);
 
-        console.log('관심사 요청 AI 반환값:', interests);
+        // 사용자 DB에 관심사 업데이트
+        const user = await User.findOne({ username });
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // 기존 interests2 필드를 삭제하고 새로 추가
+        const updatedUser = await User.findByIdAndUpdate(
+            user._id,
+            { interests2: interests, 
+                nickname: '세글자',
+             },
+            { new: true } // 업데이트된 문서를 반환받기 위해 new: true 옵션 사용
+        );
+        console.log('User interests updated successfully:', updatedUser);
+
         return interests;
     } catch (error) {
         console.error('Error fetching interests:', error);

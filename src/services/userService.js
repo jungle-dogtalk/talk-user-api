@@ -92,3 +92,17 @@ export const getUserProfile = async (userId) => {
     }
 };
 
+// AI 관심사 조회
+export const getAiInterests = async (userId) => {
+    try {
+        const user = await User.findById(userId).select('interests2');
+        if (user && user.interests2 && user.interests2.length > 0) {
+            return user.interests2[0]; // 첫 번째 값 반환
+        } else {
+            throw new Error('No AI interests found');
+        }
+    } catch (error) {
+        throw new Error('Error fetching AI interests: ' + error.message);
+    }
+};
+

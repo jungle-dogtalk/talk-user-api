@@ -54,3 +54,16 @@ export const getUserProfile = async (req, res) => {
     }
 };
 
+// AI 관심사 조회 엔드포인트 핸들러
+export const getAiInterests = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const aiInterests = await userService.getAiInterests(userId);
+        console.log('ai~~~~~~~~~', aiInterests);
+        res.status(200).json({ aiInterests });
+        
+    } catch (error) {
+        console.error('Error fetching AI interests:', error);
+        res.status(500).json({ error: error.message });
+    }
+};

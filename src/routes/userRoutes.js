@@ -10,4 +10,7 @@ router.patch('/profile', authMiddleware, userController.updateProfile);
 // 사용자 정보 조회 엔드포인트 추가
 router.get('/profile', authMiddleware, userController.getUserProfile);
 
+// AI 관심사 조회 엔드포인트 추가
+router.get('/ai-interests', authMiddleware, userController.getAiInterests);
+
 export default router;

@@ -92,20 +92,3 @@ export const getUserProfile = async (userId) => {
     }
 };
 
-export const updateUserInterests = async (username, newInterests2) => {
-    try {
-        const user = await User.findOne({ username });
-        if (!user) {
-            throw new Error('User not found');
-        }
-
-        // 기존 interests2 필드를 삭제하고 새로 추가
-        user.interests2 = newInterests2;
-
-        await user.save();
-        return user;
-    } catch (error) {
-        throw new Error('Error updating user interests: ' + error.message);
-    }
-};
-

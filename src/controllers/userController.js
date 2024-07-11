@@ -54,18 +54,3 @@ export const getUserProfile = async (req, res) => {
     }
 };
 
-// 사용자 정보 업데이트 엔드포인트 핸들러
-export const updateUserInterests = async (req, res) => {
-    const { username, newInterests2 } = req.body;
-
-    try {
-        const updatedUser = await userService.updateUserInterests(username, newInterests2);
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.json(updatedUser);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-

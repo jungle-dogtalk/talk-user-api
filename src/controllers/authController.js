@@ -20,6 +20,7 @@ export const register = async (req, res) => {
                 name,
                 email,
                 interests,
+                interests2: [], // interests2를 빈 배열로 초기화
                 nickname,
                 profileImage,
             };

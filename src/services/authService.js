@@ -47,6 +47,7 @@ export const register = async (userData) => {
         name,
         email,
         interests,
+        interests2, // interests2 필드 추가
         nickname,
         profileImage,
     } = userData;
@@ -89,6 +90,7 @@ export const register = async (userData) => {
             name,
             email,
             interests,
+            interests2, // interests2 필드 추가
             nickname,
             profileImage: profileImageUrl,
         });

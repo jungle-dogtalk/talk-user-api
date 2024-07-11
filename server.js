@@ -4,7 +4,6 @@ import { connectDB, connectRedis } from './src/config/db.js';
 import { server } from './src/app.js';
 import { createSession } from './src/services/openviduService.js';
 import { io } from './src/app.js';
-import { v4 as uuidv4 } from 'uuid';
 import { findBestMatch } from './src/services/matchingService.js';
 
 const userSocketMap = new Map();
@@ -18,7 +17,6 @@ redisSub.on('message', async (channel, message) => {
         const users = await redisClient.hvals('waiting_queue');
         const parsedUsers = users.map((user) => JSON.parse(user));
         console.log('parsed', parsedUsers);
-
         const matchedGroups = [];
         while (parsedUsers.length >= 5) {
             // 5명 이상일 때만 그룹 매칭 시작
@@ -45,13 +43,9 @@ redisSub.on('message', async (channel, message) => {
         }
 
         for (const group of matchedGroups) {
-            const sessionId = uuidv4();
+            const sessionId = await createSession();
             for (const user of group) {
                 let userId = user.userId;
-                // if (userId == null && user._id != null) {
-                //     // userId가 null 또는 undefined일 때
-                //     userId = user._id.toString();
-                // }
                 console.log('유저', userId);
                 const socketId = userSocketMap.get(userId);
                 console.log(userSocketMap);
@@ -60,25 +54,18 @@ redisSub.on('message', async (channel, message) => {
 
                 if (socketId) {
                     io.to(socketId).emit('matched', { sessionId });
+                    await redisClient.hset(
+                        sessionId,
+                        userId,
+                        JSON.stringify({
+                            socketId: socketId,
+                            data: '유저 관련 데이터'
+                        })
+                    );
                     await redisClient.hdel('waiting_queue', user.userId);
                 }
             }
         }
-        // // 큐에서 4명의 사용자 가져오기
-        // const users = await redisClient.lrange('waiting_queue', -4, -1);
-        // await redisClient.ltrim('waiting_queue', 0, -5);
-
-        // // OpenVidu 세션 생성 (OpenVidu API에 맞게 구현 필요)
-        // const sessionId = await createSession();
-
-        // // 매칭된 사용자들에게 세션 ID 전송
-        // // io.emit('matched', { sessionId });
-        // users.forEach(userId => {
-        //     const socketId = userSocketMap.get(userId);
-        //     if (socketId) {
-        //         io.to(socketId).emit('matched', { sessionId });
-        //     }
-        // });
     }
     console.log('마지막', userSocketMap);
 });

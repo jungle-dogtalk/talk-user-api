@@ -22,9 +22,11 @@ const errorHandler = (error, req, res, next) => {
             .json(ApiResponse.error('유효하지 않은 토큰입니다.', UNAUTHORIZED));
     }
 
+    console.log('에러 -> ', error);
     // BadRequestError 처리
     if (error instanceof BadRequestError) {
         return res.status(error.errorCode).json({
+            status: false,
             type: error.type,
             errorCode: error.errorCode,
             message: error.message,

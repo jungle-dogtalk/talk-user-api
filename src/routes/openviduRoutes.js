@@ -1,4 +1,5 @@
 import express from 'express';
+import { tcWrapper } from '../utils/tryCatch.js';
 import {
     createSession,
     createToken,
@@ -12,7 +13,7 @@ const router = express.Router();
 router.post('/session', createSession);
 
 // 인증 미들웨어를 거쳐 기존 세션에 대한 새로운 토큰을 생성
-router.post('/token', createToken);
+router.post('/token', authMiddleware, tcWrapper(createToken));
 
 router.get('/sessions', getSessionList);
 

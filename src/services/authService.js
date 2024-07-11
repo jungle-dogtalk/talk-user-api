@@ -35,7 +35,7 @@ export const generateToken = (user) => {
             email: user.email,
         },
         config.JWT_SECRET,
-        { expiresIn: '1h' }
+        { expiresIn: '24h' }
     );
 };
 

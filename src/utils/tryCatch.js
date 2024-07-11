@@ -1,5 +1,5 @@
 // 컨트롤러 함수를 wrapping하여 에러 핸들링
-exports.tryCatch = (controller) => async (req, res, next) => {
+export const tcWrapper = (controller) => async (req, res, next) => {
     try {
         // wrapping된 원래 컨트롤러 함수를 실행합니다.
         // 비동기 작업을 처리하기 위해 await를 사용합니다.

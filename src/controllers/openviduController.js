@@ -1,4 +1,5 @@
 import * as openviduService from '../services/openviduService.js'; // OpenVidu 서비스 모듈을 가져온다.
+import { tcWrapper } from '../utils/tryCatch.js';
 
 // 그냥 매번 새로운 세션과 토큰 생성
 export const createSession = async (req, res, next) => {
@@ -12,7 +13,6 @@ export const createSession = async (req, res, next) => {
             data: sessionId,
         });
 
-
     } catch (error) {
         console.error('Error creating session:', error);
 
@@ -25,20 +25,16 @@ export const createSession = async (req, res, next) => {
 };
 
 export const createToken = async (req, res, next) => {
-    try {
-        const { sessionId } = req.body;
-        if (!sessionId) {
-            return res.status(400).json({ message: 'Session ID is required' });
-        }
-        const token = await openviduService.createToken(sessionId);
-        res.status(200).json({ token });
-    } catch (error) {
-        console.error('Error creating token:', error);
-        res.status(500).json({
-            message: 'Failed to create token',
-            error: error.message,
-        });
+    const { sessionId, userId } = req.body;
+    if (!sessionId || !userId) {
+        return res.status(400).json({ message: 'Session ID is required' });
     }
+    const token = await openviduService.createToken(sessionId, userId);
+    res.status(200).json({
+        status: true,
+        code: 200,
+        data: token
+    });
 };
 
 export const getSessionList = async (req, res, next) => {

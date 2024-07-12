@@ -3,11 +3,11 @@ import OpenAI from 'openai';
 import ApiResponse from '../dto/response.js';
 import User from '../models/User.js'; // 사용자 모델 가져오기
 import { io } from '../app.js';
-import dotenv from 'dotenv';
+import config from '../config/config.js';
 
 // OpenAI 설정
 const openai = new OpenAI({
-    apiKey: `${process.env.Open_API_KEY}`,
+    apiKey: config.OPEN_API_KEY,
 });
 
 export const getTopicRecommendations = async (sessionId, conversation) => {

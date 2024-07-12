@@ -29,9 +29,9 @@ const connectRedis = {
         return new Promise((resolve, reject) => {
             try {
                 const redis = new Redis({
-                    host: '43.203.179.236',
+                    host: config.REDIS_HOST,
                     port: 6379,
-                    password: 'namanmu',
+                    password: config.REDIS_PASSWORD,
                     retryStrategy(times) {
                         const delay = Math.min(times * 50, 2000);
                         return delay;

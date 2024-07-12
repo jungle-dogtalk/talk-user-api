@@ -1,6 +1,7 @@
 import * as audioService from '../services/audioService.js';
 import ApiResponse from '../dto/response.js';
 import { io } from '../app.js';
+import User from '../models/User.js'; // 사용자 모델 가져오기
 
 // 세션 별 대화 내용 저장 스크립트
 let sessionTranscripts = {};
@@ -64,7 +65,7 @@ export const getTranscripts = (req, res) => {
     }
 };
 
-// 특정 사용자의 관심사 도출 및 전송
+// 특정 사용자의 관심사 도출 및 발화/경청 지수 계산 후 전송
 export const endCall = async (req, res) => {
     try {
         const { username, sessionId } = req.body;
@@ -101,8 +102,31 @@ export const endCall = async (req, res) => {
             },
             {}
         );
-        console.log(`${username}의 발화량: ${speechPercentages[username]}`);
 
+        // 사용자 DB에 발화 지수 및 경청 지수 업데이트 로직
+        const user = await User.findOne({ username });
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // 새로운 유저 발화 & 경청 지수 (null이라면 0으로 설정)
+        const newUtterance = parseFloat(speechPercentages[username]) || 0;
+        const newListen = 100 - newUtterance;
+
+        // 기존 값이 0이라면 새로운 값으로 설정
+        // 기존 값이 0이 아니라면 기존 값과 새로운 값으로 발화 지수 & 경청 지수 계산
+        user.utterance =
+            user.utterance === 0
+                ? newUtterance
+                : ((user.utterance + newUtterance) / 2).toFixed(0);
+        user.listen =
+            user.listen === 0
+                ? newListen
+                : ((user.listen + newListen) / 2).toFixed(0);
+
+        await user.save();
+
+        console.log(`${username}의 발화량: ${speechPercentages[username]}`);
         console.log('username별 스크립트:', transcriptsByUsername);
 
         // 요청한 사용자의 발언을 기반으로 관심사 도출
@@ -121,6 +145,8 @@ export const endCall = async (req, res) => {
             username,
             interests,
             speech: speechPercentages[username],
+            // 추후에 speechPercentages 자체를 넘기고 userlist를 넘겨서 클라이언트 쪽에서 다른 사용자들의 발화량도 뿌려줄 수 있도록
+            // + 경청량은 발화량의 반비례
         };
 
         res.json(ApiResponse.success(client, 'Call ended and interests sent.'));

@@ -15,11 +15,18 @@ export const receiveTranscript = (req, res) => {
     }
     // full은 전체 대화 내용, patial은 주제 추천 받기 전까지의 대화내용(즉 주제 추천 받을 시 초기화)
     if (transcript) {
-        sessionTranscripts[sessionId].full.push({ username, transcript });
+        const cleanedTranscript = transcript.replace(/\s+/g, ''); // 띄어쓰기 제거
+        const speechLength = cleanedTranscript.length; // 사용자 발언에 대한 text 길이 계산
+        sessionTranscripts[sessionId].full.push({
+            username,
+            transcript, // 띄어쓰기 제거하지 않은 원본 텍스트
+            speechLength,
+        });
         console.log(
             '주제 스크립트 배열 크기: ',
             sessionTranscripts[sessionId].partial.length
         );
+        // 주제 추천 배열 제한 크기 초과시 FIFO
         if (sessionTranscripts[sessionId].partial.length >= MAX_TRANSCRIPT) {
             sessionTranscripts[sessionId].partial.shift();
         }
@@ -72,36 +79,51 @@ export const endCall = async (req, res) => {
         const transcriptsByUsername = sessionData.full.reduce((acc, item) => {
             console.log('item:', item);
             if (!acc[item.username]) {
-                console.log(
-                    `Initializing array for username: ${item.username}`
-                );
                 acc[item.username] = [];
-            } else {
-                console.log(
-                    `Appending to existing array for username: ${item.username}`
-                );
             }
-            acc[item.username].push(item.transcript);
+            acc[item.username].push(item);
             return acc;
         }, {});
+
+        // 발화량 계산
+        const totalLength = sessionData.full.reduce(
+            (acc, item) => acc + item.speechLength,
+            0
+        );
+        const speechPercentages = Object.keys(transcriptsByUsername).reduce(
+            (acc, key) => {
+                const userLength = transcriptsByUsername[key].reduce(
+                    (acc, item) => acc + item.speechLength,
+                    0
+                );
+                acc[key] = ((userLength / totalLength) * 100).toFixed(0); //소수점 반올림
+                return acc;
+            },
+            {}
+        );
+        console.log(`${username}의 발화량: ${speechPercentages[username]}`);
 
         console.log('username별 스크립트:', transcriptsByUsername);
 
         // 요청한 사용자의 발언을 기반으로 관심사 도출
         const userTranscripts = transcriptsByUsername[username] || [];
-        const transcriptText = userTranscripts.join('\n');
-        const interests = await audioService.getInterest(username, transcriptText);
+        const transcriptText = userTranscripts
+            .map((item) => item.transcript)
+            .join('\n');
+        const interests = await audioService.getInterest(
+            username,
+            transcriptText
+        );
 
         console.log('Interests:', interests);
 
-        const clientInterests = { username, interests };
+        const client = {
+            username,
+            interests,
+            speech: speechPercentages[username],
+        };
 
-        res.json(
-            ApiResponse.success(
-                clientInterests,
-                'Call ended and interests sent.'
-            )
-        );
+        res.json(ApiResponse.success(client, 'Call ended and interests sent.'));
     } catch (error) {
         console.error('Error ending call and fetching interests:', error);
         res.status(500).json(
@@ -124,12 +146,15 @@ export const recommendTopics = async (sessionId) => {
         .join('\n');
     console.log('대화 스크립트: ', conversation);
     try {
-        const response = await audioService.getTopicRecommendations(
-            conversation
-        );
-        // 해당 세션에 그룹되어 있는 모든 클라이언트에게 주제 추천 결과 전송
-        io.to(sessionId).emit('topicRecommendations', response);
-        sessionData.partial = []; // 주제 추천 후 partial 리스트 초기화
+        await audioService.getTopicRecommendations(sessionId, conversation);
+        sessionData.partial = [];
+        /*------------본래 Topic 한 번에 보내던 코드-------------*/
+        // const response = await audioService.getTopicRecommendations(
+        //     conversation
+        // );
+        // // 해당 세션에 그룹되어 있는 모든 클라이언트에게 주제 추천 결과 전송
+        // io.to(sessionId).emit('topicRecommendations', response);
+        // sessionData.partial = []; // 주제 추천 후 partial 리스트 초기화
     } catch (error) {
         console.error('Error fetching topic recommendations:', error);
     }

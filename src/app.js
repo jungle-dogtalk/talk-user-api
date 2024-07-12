@@ -13,7 +13,6 @@ import { OpenVidu } from 'openvidu-node-client';
 import config from './config/config.js';
 import 'dotenv/config';
 
-
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
 import {
     clearTranscriptsForSession,
@@ -79,6 +78,7 @@ io.on('connection', (socket) => {
 
     // 클라이언트에서 발생한 주제 추천 요청 이벤트 수신
     socket.on('requestTopicRecommendations', (data) => {
+        console.log('in request');
         const { sessionId } = data;
         recommendTopics(sessionId);
     });

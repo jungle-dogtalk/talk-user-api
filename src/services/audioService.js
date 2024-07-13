@@ -89,7 +89,7 @@ export const getInterest = async (username, transcript) => {
         // 기존 interests2 필드를 삭제하고 새로 추가
         const updatedUser = await User.findByIdAndUpdate(
             user._id,
-            { interests2: interests, nickname: '세글자' },
+            { interests2: interests },
             { new: true } // 업데이트된 문서를 반환받기 위해 new: true 옵션 사용
         );
         console.log('User interests updated successfully:', updatedUser);

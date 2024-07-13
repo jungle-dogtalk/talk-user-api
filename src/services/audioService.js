@@ -11,7 +11,7 @@ const openai = new OpenAI({
 });
 
 export const getTopicRecommendations = async (sessionId, conversation) => {
-    const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n 이 대화 흐름에 맞게 다음으로 이 사람들이 얘기하기 좋을만한 주제를 3가지 정도 추천해줘.`;
+    const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n 이 대화 흐름에 맞게 이 사람들이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 추천해줘. 각 주제는 줄바꿈을 사용해서 답해줘.`;
 
     console.log('AI Prompt: ', prompt);
     const startTime = Date.now();
@@ -54,7 +54,7 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
 };
 
 export const getInterest = async (username, transcript) => {
-    const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5가지의 단어로 특정해줘. 각 관심사는 단어로만 답해줘. 대화 내용: '${transcript}'`;
+    const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5가지의 단어로 특정해줘. 각 관심사는 예를 들어 음식\n여행\n 이런 식으로 줄바꿈을 사용해서 단어로만 답해줘. 대화 내용: '${transcript}'`;
     console.log('관심사 특정 요청: ', prompt);
     const startTime = Date.now();
     try {

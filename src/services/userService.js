@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import config from '../config/config.js'; // 설정 파일 가져오기
 import User from '../models/User.js'; // 사용자 모델 가져오기
 
+import { redisClient } from '../../server.js'; 
+
 // S3 클라이언트 설정
 const s3 = new S3Client({
     region: config.AWS_REGION,  //AWS 리전 설정
@@ -106,3 +108,28 @@ export const getAiInterests = async (userId) => {
     }
 };
 
+// 세션에 따른 유저 데이터 조회 서비스 함수
+export const getSessionDataService = async (sessionId) => {
+    try {
+        const sessionData = await redisClient.hgetall(sessionId);
+        if (!sessionData) {
+            throw new Error('Session not found');
+        }
+
+        // Redis에서 가져온 데이터 파싱
+        const parsedData = Object.entries(sessionData).map(([userId, data]) => {
+            const parsedUserData = JSON.parse(data);
+            return {
+                userId,
+                socketId: parsedUserData.socketId,
+                interests: parsedUserData.interests, // 배열로 저장된 interests
+                nickname: parsedUserData.nickname
+            };
+        });
+
+        return parsedData;
+    } catch (error) {
+        console.error('Error in getSessionDataService:', error);
+        throw error;
+    }
+};

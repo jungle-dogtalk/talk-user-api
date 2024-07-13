@@ -67,3 +67,15 @@ export const getAiInterests = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+// 세션에 따른 내부 데이터 조회 컨트롤러 함수
+export const getSessionData = async (req, res) => {
+    try {
+        const { sessionId } = req.query;
+        const sessionData = await userService.getSessionDataService(sessionId);
+        res.status(200).json({ success: true, data: sessionData });
+    } catch (error) {
+        console.error('Error in getSessionData controller:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};

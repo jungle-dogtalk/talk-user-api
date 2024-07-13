@@ -3,7 +3,8 @@ import { tcWrapper } from '../utils/tryCatch.js';
 import {
     createSession,
     createToken,
-    getSessionList
+    getSessionList,
+    calculateTimer
 } from '../controllers/openviduController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
@@ -16,5 +17,7 @@ router.post('/session', createSession);
 router.post('/token', authMiddleware, tcWrapper(createToken));
 
 router.get('/sessions', getSessionList);
+
+router.get('/session/timer', authMiddleware, tcWrapper(calculateTimer))
 
 export default router; // 라우터를 모듈로 내보내기

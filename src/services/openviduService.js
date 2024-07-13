@@ -6,17 +6,31 @@ import BadRequestError from '../errors/BadRequestError.js';
 
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
 
-const MAX_USERS_PER_SESSION = 4; // 세션 당 최대 사용자 수
+const ALLOCATED_TIME_FOR_SESSION = (1000 * 60 * 5) + 5000;  // 5분 5초
 
 // OpenVidu 새로운 세션 생성
 export const createSession = async () => {
   try {
     console.log('Creating new session');
     const session = await OV.createSession();
-    console.log('Created new session:', session.sessionId);
-    return session.sessionId;
+    const sessionId = session.sessionId;
+
+    if (sessionId) {
+      const finishTime = Date.now() + 5 * 60 * 1000; // 현재 시각 + 5분 
+      // redis 세션에 대한 메타정보 삽입 (타이머)
+      await redisClient.hset(
+        sessionId + '_meta',
+        'finishTime',
+        finishTime.toString()
+      );
+      setTimeout(() => {
+        destorySession(sessionId);
+      }, ALLOCATED_TIME_FOR_SESSION);
+    }
+
+    return sessionId;
   } catch (error) {
-    console.error('Error creating session:', error);
+    console.error('세션 핸들링 도중 에러가 발생하였습니다.', error);
     throw error;
   }
 };
@@ -63,4 +77,34 @@ export const getSessions = async () => {
     console.error('Error creating token:', error);
     throw error;
   }
+}
+
+export const calculateTimer = async (sessionId) => {
+  if (!sessionId) {
+    throw new BadRequestError('세션 id 누락 오류'); // TODO: 잘못된 세션 ID에 대한 예외처리도 필요
+  }
+
+  const metaData = await redisClient.hgetall(sessionId + '_meta');
+  const { finishTime } = metaData;
+
+  if (!finishTime) {
+    return 0;
+  }
+
+  const finishTimeMs = parseInt(finishTime, 10);
+  const currentTimeMs = Date.now();
+  const remainingTimeMs = finishTimeMs - currentTimeMs;
+  const remainingTimeSeconds = Math.floor(remainingTimeMs / 1000);
+
+  return Math.max(remainingTimeSeconds, 0);
+}
+
+// 시간초과에 의한 세션 종료
+const destorySession = async (sessionId) => {
+  const session = OV.activeSessions.find(s => s.sessionId === sessionId);
+  if (!session) {
+    throw new BadRequestError(`존재하지 않는 세션: ${sessionId}`);
+  }
+
+  await session.close();
 }

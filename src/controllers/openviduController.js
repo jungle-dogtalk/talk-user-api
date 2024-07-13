@@ -1,5 +1,6 @@
 import * as openviduService from '../services/openviduService.js'; // OpenVidu 서비스 모듈을 가져온다.
 import { tcWrapper } from '../utils/tryCatch.js';
+import ApiResponse from '../dto/response.js';
 
 // 그냥 매번 새로운 세션과 토큰 생성
 export const createSession = async (req, res, next) => {
@@ -47,4 +48,11 @@ export const getSessionList = async (req, res, next) => {
             error: error.message,
         });
     }
+}
+
+export const calculateTimer = async (req, res, next) => {
+    const { sessionId } = req.query;
+    const remainingTime = await openviduService.calculateTimer(sessionId);
+
+    res.status(200).json(ApiResponse.success({ remainingTime }))
 }

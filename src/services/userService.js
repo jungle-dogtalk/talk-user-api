@@ -122,7 +122,7 @@ export const getSessionDataService = async (sessionId) => {
             return {
                 userId,
                 socketId: parsedUserData.socketId,
-                interests: parsedUserData.interests, // 배열로 저장된 interests
+                aiInterests: parsedUserData.aiInterests, // 배열로 저장된 interests
                 nickname: parsedUserData.nickname
             };
         });

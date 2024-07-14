@@ -8,8 +8,8 @@ const calculateSimilarity = async (userA, userB) => {
     const response = await axios.post(
         `${config.PYTHON_SERVER_URL}/similarity/`,
         {
-            interestsA: userA.interests,
-            interestsB: userB.interests,
+            interestsA: userA.userInterests,
+            interestsB: userB.userInterests,
             // listeningA: userA.listeningIndex,
             // listeningB: userB.listeningIndex,
             // speakingA: userA.speakingIndex,

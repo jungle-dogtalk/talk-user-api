@@ -17,6 +17,6 @@ router.get('/ai-interests', authMiddleware, userController.getAiInterests);
 router.get('/session-data', authMiddleware, userController.getSessionData);
 
 // 통화 유저 정보 조회 엔드포인트 추가
-router.post('/call-user-info', userController.getCallUserInfo);
+router.post('/call-user-info',authMiddleware, userController.getCallUserInfo);
 
 export default router;

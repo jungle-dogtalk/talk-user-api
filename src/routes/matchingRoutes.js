@@ -4,8 +4,8 @@ import { getUserMatch, addUserToQueue } from '../controllers/Cmatching.js';
 
 const router = express.Router();
 
-router.get('/:userId', getUserMatch);
+router.get('/:userId', authMiddleware, getUserMatch);
 
-router.post('/add/user', addUserToQueue);
+router.post('/add/user',authMiddleware, addUserToQueue);
 
 export default router;

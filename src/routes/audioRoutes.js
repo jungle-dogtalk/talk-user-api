@@ -9,12 +9,12 @@ import {
 const router = express.Router();
 
 // 음성 인식 텍스트 받는 라우트
-router.post('/receive-transcript', receiveTranscript);
+router.post('/receive-transcript', authMiddleware, receiveTranscript);
 // 공통 스크립트 반환 라우트
-router.get('/transcripts', getTranscripts);
+router.get('/transcripts', authMiddleware, getTranscripts);
 // 주제 추천 요청 라우트
-router.post('/recommend-topics', recommendTopics);
+router.post('/recommend-topics',authMiddleware, recommendTopics);
 // 통화 종료 시 관심사 특정 요청 라우트
-router.post('/end-call', endCall);
+router.post('/end-call',authMiddleware, endCall);
 
 export default router;

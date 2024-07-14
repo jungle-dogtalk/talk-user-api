@@ -5,6 +5,8 @@ import {
     recommendTopics,
     endCall,
 } from '../controllers/audioController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+
 
 const router = express.Router();
 

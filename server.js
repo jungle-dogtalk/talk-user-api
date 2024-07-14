@@ -6,6 +6,8 @@ import { createSession } from './src/services/openviduService.js';
 import { io } from './src/app.js';
 import { findBestMatch } from './src/services/matchingService.js';
 
+const MATCH_MAKING_PERSON_NUMBERS = 5;
+const BEST_MATCHING_PERSON_NUMBERS = 3;
 const userSocketMap = new Map();
 
 const redisClient = await connectRedis.connectRedis();
@@ -18,14 +20,16 @@ redisSub.on('message', async (channel, message) => {
         const parsedUsers = users.map((user) => JSON.parse(user));
         console.log('parsed', parsedUsers);
         const matchedGroups = [];
-        while (parsedUsers.length >= 5) {
+        while (parsedUsers.length >= MATCH_MAKING_PERSON_NUMBERS) {
             // 5명 이상일 때만 그룹 매칭 시작
 
             const user = parsedUsers.shift(); //기준이 될 유저(맨 처음 사용자)
+            console.log('유저정보 -> ', user);
+
             // console.log('기준:', user);
             const bestMatches = await findBestMatch(user, parsedUsers);
 
-            if (bestMatches.length === 3) {
+            if (bestMatches.length === BEST_MATCHING_PERSON_NUMBERS) {
                 matchedGroups.push([user, ...bestMatches]);
 
                 for (const matchedUser of bestMatches) {
@@ -46,7 +50,7 @@ redisSub.on('message', async (channel, message) => {
             const sessionId = await createSession();
             for (const user of group) {
                 let userId = user.userId;
-                console.log('유저', userId);
+                console.log('유저정보 -> ', user);
                 const socketId = userSocketMap.get(userId);
                 console.log(userSocketMap);
                 console.log('세션', sessionId);
@@ -59,7 +63,9 @@ redisSub.on('message', async (channel, message) => {
                         userId,
                         JSON.stringify({
                             socketId: socketId,
-                            data: '유저 관련 데이터'
+                            userInterests: user.userInterests,
+                            aiInterests: user.aiInterests,
+                            nickname: user.nickname,
                         })
                     );
                     await redisClient.hdel('waiting_queue', user.userId);
@@ -74,7 +80,7 @@ const startServer = async () => {
     try {
         await connectDB.connectMongo();
         io.on('connection', (socket) => {
-            socket.on('userDetails', async ({ userId, interests }) => {
+            socket.on('userDetails', async ({ userId, userInterests, aiInterests, nickname }) => {
                 if (userSocketMap.has(userId)) {
                     console.log('이미 연결된 유저입니다.');
                     socket.disconnect();
@@ -90,7 +96,7 @@ const startServer = async () => {
                 });
 
                 console.log('유저아이디 -> ', userId);
-                console.log('관심사 -> ', interests);
+                console.log('관심사 -> ', userInterests);
 
                 const userExists = await redisClient.hexists(
                     'waiting_queue',
@@ -98,20 +104,29 @@ const startServer = async () => {
                 );
 
                 if (!userExists) {
-                    const interestsList = Array.isArray(interests)
-                        ? interests
-                        : interests.split(',');
+                    const userInterestsList = Array.isArray(userInterests)
+                        ? userInterests
+                        : userInterests.split(',');
+
+                    const aiInterestsList = Array.isArray(aiInterests)
+                        ? aiInterests
+                        : aiInterests.split(',');
 
                     await redisClient.hset(
                         'waiting_queue',
                         userId,
-                        JSON.stringify({ userId, interests: interestsList })
+                        JSON.stringify({
+                            userId,
+                            userInterests: userInterestsList,
+                            aiInterests: aiInterestsList,
+                            nickname,
+                        })
                     );
 
                     const queueLength = await redisClient.hlen('waiting_queue');
                     console.log('대기큐 길이 -> ', queueLength);
 
-                    if (queueLength % 5 === 0) {
+                    if (queueLength % MATCH_MAKING_PERSON_NUMBERS === 0) {
                         redisClient.publish('matchmaking', 'match');
                     }
                 } else {

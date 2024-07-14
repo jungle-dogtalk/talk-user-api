@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import config from '../config/config.js'; // 설정 파일 가져오기
 import User from '../models/User.js'; // 사용자 모델 가져오기
 
-import { redisClient } from '../../server.js'; 
+import { redisClient } from '../../server.js';
 
 // S3 클라이언트 설정
 const s3 = new S3Client({
@@ -74,7 +74,7 @@ export const updateUserProfile = async (userId, file, interests) => {
             { new: true }
         );
 
-         // 업데이트된 사용자 정보 반환
+        // 업데이트된 사용자 정보 반환
         return updatedUser;
     } catch (error) {
         throw new Error('Error updating user profile: ' + error.message);
@@ -122,7 +122,8 @@ export const getSessionDataService = async (sessionId) => {
             return {
                 userId,
                 socketId: parsedUserData.socketId,
-                interests: parsedUserData.interests, // 배열로 저장된 interests
+                userInterests: parsedUserData.userInterests, // 배열로 저장된 interests
+                aiInterests: parsedUserData.aiInterests,
                 nickname: parsedUserData.nickname
             };
         });

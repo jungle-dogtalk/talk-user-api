@@ -35,7 +35,7 @@ export const createSession = async () => {
   }
 };
 
-export const createToken = async (sid, userId) => {
+export const createToken = async (sid, userInfo) => {
   console.log('Creating token for sessionId:', sid);
   const sessions = await OV.fetch();
   console.log('가용 세션 리스트? -> ', sessions); // 단순 fetch 메소드로는 조회가 안 됨
@@ -50,7 +50,9 @@ export const createToken = async (sid, userId) => {
   }
 
   console.log('세션 id -> ', session.sessionId);
-  console.log('유저 id -> ', userId);
+  console.log('유저 id -> ', userInfo.username);
+
+  const userId = userInfo.username;
 
   const isIncludedUser = await redisClient.hexists(session.sessionId, userId);
   if (!isIncludedUser) {
@@ -59,7 +61,7 @@ export const createToken = async (sid, userId) => {
 
   const connectionProperties = {
     role: "PUBLISHER",
-    data: userId,
+    data: userInfo.nickname,
     kurentoOptions: {
       allowedFilters: ["GStreamerFilter", "FaceOverlayFilter"]
     }

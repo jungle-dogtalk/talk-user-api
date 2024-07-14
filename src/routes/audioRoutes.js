@@ -4,6 +4,8 @@ import {
     getTranscripts,
     recommendTopics,
     endCall,
+    AIreceiveTranscript,
+    clearUserConversation,
 } from '../controllers/audioController.js';
 
 const router = express.Router();
@@ -16,5 +18,9 @@ router.get('/transcripts', getTranscripts);
 router.post('/recommend-topics', recommendTopics);
 // 통화 종료 시 관심사 특정 요청 라우트
 router.post('/end-call', endCall);
+// AI와의 대화 저장 및 응답 반환 라우트
+router.post('/AIreceive-transcript', AIreceiveTranscript);
+// AI와의 대화 기록 삭제 라우트
+router.post('/clear-user-conversation', clearUserConversation);
 
 export default router;

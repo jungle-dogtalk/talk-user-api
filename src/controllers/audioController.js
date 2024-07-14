@@ -8,7 +8,10 @@ let sessionTranscripts = {};
 // partial Script 배열 제한
 const MAX_TRANSCRIPT = 5;
 
-// 클라이언트로부터 텍스트를 받아서 저장하는 함수
+// 사용자 별 AI와의 대화 내용 저장 스크립트
+let userConversations = {};
+
+// 클라이언트로부터 텍스트를 받아서 저장하는 함수(실제 사용자끼리)
 export const receiveTranscript = (req, res) => {
     const { username, transcript, sessionId } = req.body;
     if (!sessionTranscripts[sessionId]) {
@@ -194,5 +197,59 @@ export const clearTranscriptsForSession = (sessionId) => {
         console.log(`Transcripts for session ${sessionId} have been cleared.`);
     } else {
         console.log(`No transcripts found for session ${sessionId}`);
+    }
+};
+
+// 클라이언트와 AI와의 대화를 저장
+export const AIreceiveTranscript = async (socket, username, transcript) => {
+    try {
+        if (!userConversations[username]) {
+            userConversations[username] = [];
+        }
+
+        // 사용자 발언 대화 스크립트에 저장
+        if (transcript) {
+            userConversations[username].push({
+                speaker: 'user',
+                text: transcript,
+            });
+
+            // AI 응답 생성
+            const aiResponse = await audioService.getAIResponse(transcript);
+
+            let aiResponseText = '';
+
+            for await (const chunk of aiResponse) {
+                const message = chunk.choices[0].delta.content || '';
+                aiResponseText += message;
+                socket.emit('AI_RESPONSE', message);
+            }
+
+            // AI 응답 대화 스크립트에 저장
+            userConversations[username].push({
+                speaker: 'ai',
+                text: aiResponseText,
+            });
+
+            console.log('AI 대화 스크립트: ', userConversations[username]);
+
+            socket.emit('AI_RESPONSE_END');
+        } else {
+            socket.emit('AI_RESPONSE_ERROR', 'No transcript provided');
+        }
+    } catch (error) {
+        console.error('Error handling AI conversation:', error);
+        socket.emit('AI_RESPONSE_ERROR', 'Failed to handle AI conversation');
+    }
+};
+
+// AI와 사용자의 대화 기록 삭제
+export const clearUserConversation = (req, res) => {
+    const { username } = req.body;
+    if (userConversations[username]) {
+        delete userConversations[username];
+        res.json(ApiResponse.success({}, 'User conversation cleared'));
+    } else {
+        res.status(404).json(ApiResponse.error('User conversation not found'));
     }
 };

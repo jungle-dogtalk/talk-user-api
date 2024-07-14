@@ -214,25 +214,32 @@ export const AIreceiveTranscript = async (socket, username, transcript) => {
                 text: transcript,
             });
 
-            // AI 응답 생성
+            // AI 응답 생성 - stream 형식
             const aiResponse = await audioService.getAIResponse(transcript);
 
-            let aiResponseText = '';
+            // let aiResponseText = '';
 
-            for await (const chunk of aiResponse) {
-                const message = chunk.choices[0].delta.content || '';
-                aiResponseText += message;
-                socket.emit('AI_RESPONSE', message);
-            }
+            // for await (const chunk of aiResponse) {
+            //     const message = chunk.choices[0].delta.content || '';
+            //     aiResponseText += message;
+            //     socket.emit('AI_RESPONSE', message);
+            // }
+
+            // // AI 응답 대화 스크립트에 저장
+            // userConversations[username].push({
+            //     speaker: 'ai',
+            //     text: aiResponseText,
+            // });
 
             // AI 응답 대화 스크립트에 저장
             userConversations[username].push({
                 speaker: 'ai',
-                text: aiResponseText,
+                text: aiResponse,
             });
 
             console.log('AI 대화 스크립트: ', userConversations[username]);
 
+            socket.emit('AI_RESPONSE', aiResponse);
             socket.emit('AI_RESPONSE_END');
         } else {
             socket.emit('AI_RESPONSE_ERROR', 'No transcript provided');

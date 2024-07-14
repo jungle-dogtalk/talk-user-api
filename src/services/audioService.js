@@ -112,10 +112,11 @@ export const getAIResponse = async (transcript) => {
             max_tokens: 150,
             n: 1,
             temperature: 0.7,
-            stream: true,
+            // stream: true,
         });
-
-        return response;
+        const aiResponse = response.choices[0].message.content.trim();
+        return aiResponse;
+        // return response;
     } catch (error) {
         console.error('Error fetching AI response stream:', error);
         throw new Error('Failed to fetch AI response stream');

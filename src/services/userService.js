@@ -135,3 +135,14 @@ export const getSessionDataService = async (sessionId) => {
         throw error;
     }
 };
+
+// 통화 유저 정보 조회 서비스 함수
+export const getCallUserInfoService = async (usernames) => {
+    try {
+        const users = await User.find({ username : { $in: usernames  } }).select('profileImage utterance');
+        return users;
+    } catch (error) {
+        console.error('Error in getCallUserInfoService:', error);
+        throw error;
+    }
+};

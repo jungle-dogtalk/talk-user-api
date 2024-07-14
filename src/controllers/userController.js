@@ -79,3 +79,15 @@ export const getSessionData = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+
+// 통화 유저 정보 조회 컨트롤러 함수
+export const getCallUserInfo = async (req, res) => {
+    try {
+        const { usernames } = req.body;
+        const userInfo = await userService.getCallUserInfoService(usernames);
+        res.status(200).json({ success: true, data: userInfo });
+    } catch (error) {
+        console.error('Error in getCallUserInfo controller:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};

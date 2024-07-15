@@ -14,6 +14,9 @@ const userSchema = new mongoose.Schema({
     profileImageId: { type: String, required: false }, // 이미지의 UUID를 저장하는 필드 (선택)
     utterance: { type: Number, default: 0 }, // 발화 지수, default: 0
     listen: { type: Number, default: 0 }, // 경청 지수, default: 0
+    reviewAverageScore: { type: Number, default: 0 }, // 리뷰 평균 점수 필드
+    totalReviewScore: { type: Number, default: 0 }, // 총 리뷰 점수
+    totalReviewCount: { type: Number, default: 0 }, // 총 리뷰 수
 });
 
 // 사용자 저장 전에 비밀번호 해시화

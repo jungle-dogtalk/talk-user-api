@@ -53,6 +53,45 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
     }
 };
 
+export const getTopicRecommendationsForAI = async (
+    socket,
+    username,
+    conversation
+) => {
+    const prompt = `이게 지금까지 AI와 사람이 대화한 스크립트야.:\n${conversation}\n 이 대화 흐름에 맞게 이 사람이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 추천해줘. 각 주제는 줄바꿈을 사용해서 답해줘.`;
+
+    console.log('AI Prompt: ', prompt);
+    const startTime = Date.now();
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 200, // 생성할 최대 토큰 수
+            n: 1, // 생성할 응답 개수
+            temperature: 0.7, // 응답의 창의성 조정
+            stream: true, // 스트림 -> 응답을 한 글자씩 읽어올 수 있음
+        });
+        let content = '';
+
+        for await (const chunk of response) {
+            const message = chunk.choices[0].delta.content || '';
+            content += message;
+            socket.emit('topicRecommendations', message);
+        }
+
+        const endTime = Date.now();
+        console.log(
+            'AI 주제 추천 응답에 걸린 시간: ',
+            (endTime - startTime) / 1000,
+            '초'
+        );
+        socket.emit('endOfStream');
+    } catch (error) {
+        console.error('Error fetching AI topic recommendations:', error);
+        throw ApiResponse.error('AI 주제 추천 실패', 500);
+    }
+};
+
 export const getInterest = async (username, transcript) => {
     const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5가지의 단어로 특정해줘. 각 관심사는 예를 들어 음식\n여행\n 이런 식으로 줄바꿈을 사용해서 단어로만 답해줘. 대화 내용: '${transcript}'`;
     console.log('관심사 특정 요청: ', prompt);
@@ -108,7 +147,19 @@ export const getAIResponse = async (transcript) => {
     try {
         const response = await openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: prompt }],
+            messages: [
+                { role: 'system', content: 'You are a friend assistant.' },
+                {
+                    role: 'assistant',
+                    content:
+                        '처음 보는 사이의 친절한 친구처럼 대화해보자.\n' +
+                        '한국어로 대답해주었으면 좋겠어.\n' +
+                        '대화를 자연스럽게 이끌어줄래?\n' +
+                        '너무 길게 말하진 말고, 최대 두 세문장까지만 말해줬으면 해.\n' +
+                        '또한 대화를 마무리짓지 않아야 해.',
+                }, // Assistant 역할 추가
+                { role: 'user', content: prompt },
+            ],
             max_tokens: 150,
             n: 1,
             temperature: 0.7,

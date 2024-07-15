@@ -18,6 +18,7 @@ import {
     clearTranscriptsForSession,
     recommendTopics,
     AIreceiveTranscript,
+    recommendTopicsForAI,
 } from './controllers/audioController.js';
 
 const app = express();
@@ -88,6 +89,12 @@ io.on('connection', (socket) => {
     socket.on('AI_RECEIVE_TRANSCRIPT', async (data) => {
         const { username, transcript } = data;
         await AIreceiveTranscript(socket, username, transcript);
+    });
+
+    // AI 주제 추천 요청 이벤트 수신
+    socket.on('requestTopicRecommendationsForAI', (data) => {
+        const { username } = data;
+        recommendTopicsForAI(socket, username);
     });
 
     // 세션에서 연결을 끊을 때

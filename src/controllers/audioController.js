@@ -224,6 +224,75 @@ export const recommendTopics = async (sessionId) => {
     }
 };
 
+// AI 주제 추천 요청을 처리하는 함수
+export const recommendTopicsForAI = async (socket, username) => {
+    const userConversationsData = userConversations[username];
+
+    if (!userConversationsData) {
+        console.error('User conversation not found');
+        socket.emit('topicRecommendations', {
+            error: 'User conversation not found',
+        });
+        return;
+    }
+
+    const conversation = userConversationsData
+        .map((item) => `${item.speaker}: ${item.text}`)
+        .join('\n');
+    console.log('AI 대화 스크립트: ', conversation);
+    try {
+        await audioService.getTopicRecommendationsForAI(
+            socket,
+            username,
+            conversation
+        );
+    } catch (error) {
+        console.error('Error fetching AI topic recommendations:', error);
+        socket.emit('topicRecommendations', {
+            error: 'Failed to fetch AI topic recommendations',
+        });
+    }
+};
+
+export const getTopicRecommendationsForAI = async (
+    socket,
+    username,
+    conversation
+) => {
+    const prompt = `이게 지금까지 AI와 사람이 대화한 스크립트야.:\n${conversation}\n 이 대화 흐름에 맞게 이 사람이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 추천해줘. 각 주제는 줄바꿈을 사용해서 답해줘.`;
+
+    console.log('AI Prompt: ', prompt);
+    const startTime = Date.now();
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 200, // 생성할 최대 토큰 수
+            n: 1, // 생성할 응답 개수
+            temperature: 0.7, // 응답의 창의성 조정
+            stream: true, // 스트림 -> 응답을 한 글자씩 읽어올 수 있음
+        });
+        let content = '';
+
+        for await (const chunk of response) {
+            const message = chunk.choices[0].delta.content || '';
+            content += message;
+            socket.emit('topicRecommendations', message);
+        }
+
+        const endTime = Date.now();
+        console.log(
+            'AI 주제 추천 응답에 걸린 시간: ',
+            (endTime - startTime) / 1000,
+            '초'
+        );
+        socket.emit('endOfStream');
+    } catch (error) {
+        console.error('Error fetching AI topic recommendations:', error);
+        throw ApiResponse.error('AI 주제 추천 실패', 500);
+    }
+};
+
 // 모든 사용자가 나갔을 때 스크립트를 초기화하는 함수 (실제 사용자)
 export const clearTranscriptsForSession = (sessionId) => {
     console.log('사용자가 다 나간다면');

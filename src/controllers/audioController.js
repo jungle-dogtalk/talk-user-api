@@ -8,7 +8,10 @@ let sessionTranscripts = {};
 // partial Script 배열 제한
 const MAX_TRANSCRIPT = 5;
 
-// 클라이언트로부터 텍스트를 받아서 저장하는 함수
+// 사용자 별 AI와의 대화 내용 저장 스크립트
+let userConversations = {};
+
+// 클라이언트로부터 텍스트를 받아서 저장하는 함수 (실제 사용자)
 export const receiveTranscript = (req, res) => {
     const { username, transcript, sessionId } = req.body;
     if (!sessionTranscripts[sessionId]) {
@@ -50,7 +53,7 @@ export const receiveTranscript = (req, res) => {
     }
 };
 
-// 공통 스크립트를 반환하는 함수
+// 공통 스크립트를 반환하는 함수 (실제 사용자)
 export const getTranscripts = (req, res) => {
     const { sessionId } = req.query;
     if (sessionId && sessionTranscripts[sessionId]) {
@@ -62,6 +65,39 @@ export const getTranscripts = (req, res) => {
         );
     } else {
         res.status(404).json(ApiResponse.error('Session not found'));
+    }
+};
+
+// 클라이언트로부터 텍스트를 받아서 저장하는 함수 (AI와 대화)
+export const AIreceiveTranscript = async (socket, username, transcript) => {
+    try {
+        if (!userConversations[username]) {
+            userConversations[username] = [];
+        }
+
+        if (transcript) {
+            userConversations[username].push({
+                speaker: username,
+                text: transcript,
+            });
+
+            const aiResponse = await audioService.getAIResponse(transcript);
+
+            userConversations[username].push({
+                speaker: 'AI',
+                text: aiResponse,
+            });
+
+            console.log('AI와 대화: ', userConversations[username]);
+
+            socket.emit('AI_RESPONSE', aiResponse);
+            socket.emit('AI_RESPONSE_END');
+        } else {
+            socket.emit('AI_RESPONSE_ERROR', 'No transcript provided');
+        }
+    } catch (error) {
+        console.error('Error in AI conversation: ', error);
+        socket.emit('AI_RESPONSE_ERROR', 'Failed to handle AI conversation');
     }
 };
 
@@ -186,7 +222,7 @@ export const recommendTopics = async (sessionId) => {
     }
 };
 
-// 모든 사용자가 나갔을 때 스크립트를 초기화하는 함수
+// 모든 사용자가 나갔을 때 스크립트를 초기화하는 함수 (실제 사용자)
 export const clearTranscriptsForSession = (sessionId) => {
     console.log('사용자가 다 나간다면');
     if (sessionTranscripts[sessionId]) {
@@ -194,5 +230,16 @@ export const clearTranscriptsForSession = (sessionId) => {
         console.log(`Transcripts for session ${sessionId} have been cleared.`);
     } else {
         console.log(`No transcripts found for session ${sessionId}`);
+    }
+};
+
+// AI와 사용자의 대화 기록 삭제
+export const clearUserConversation = (req, res) => {
+    const { username } = req.body;
+    if (userConversations[username]) {
+        delete userConversations[username];
+        res.json(ApiResponse.success({}, 'User conversation cleared'));
+    } else {
+        res.status(404).json(ApiResponse.error('User conversation not found'));
     }
 };

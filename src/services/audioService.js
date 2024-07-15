@@ -100,3 +100,25 @@ export const getInterest = async (username, transcript) => {
         throw ApiResponse.error('Failed to fetch interests', 500);
     }
 };
+
+// AI와 대화 시 응답 생성
+export const getAIResponse = async (transcript) => {
+    const prompt = `우린 지금 스몰톡을 하고 있는거야. 사람처럼 대화해보자. \n사용자가 말한 내용: "${transcript}". 이에 대한 적절한 응답을 제공해줘.`;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 150,
+            n: 1,
+            temperature: 0.7,
+            // stream: true,
+        });
+
+        const aiResponse = response.choices[0].message.content.trim();
+        return aiResponse;
+    } catch (error) {
+        console.error('Error fetching AI response: ', error);
+        throw new Error('Failed to fetch AI response');
+    }
+};

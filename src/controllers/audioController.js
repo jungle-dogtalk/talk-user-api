@@ -81,8 +81,10 @@ export const AIreceiveTranscript = async (socket, username, transcript) => {
                 text: transcript,
             });
 
+            // AI 응답 생성
             const aiResponse = await audioService.getAIResponse(transcript);
 
+            // AI 응답 또한 스크립트에 push
             userConversations[username].push({
                 speaker: 'AI',
                 text: aiResponse,

@@ -17,6 +17,7 @@ import 'dotenv/config';
 import {
     clearTranscriptsForSession,
     recommendTopics,
+    AIreceiveTranscript,
 } from './controllers/audioController.js';
 
 const app = express();
@@ -81,6 +82,12 @@ io.on('connection', (socket) => {
         console.log('in request');
         const { sessionId } = data;
         recommendTopics(sessionId);
+    });
+
+    // 사용자 발언에 대한 AI 응답 요청
+    socket.on('AI_RECEIVE_TRANSCRIPT', async (data) => {
+        const { username, transcript } = data;
+        await AIreceiveTranscript(socket, username, transcript);
     });
 
     // 세션에서 연결을 끊을 때

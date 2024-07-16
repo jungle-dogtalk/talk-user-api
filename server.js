@@ -66,6 +66,8 @@ redisSub.on('message', async (channel, message) => {
                             userInterests: user.userInterests,
                             aiInterests: user.aiInterests,
                             nickname: user.nickname,
+                            question: user.question,
+                            answer: user.answer
                         })
                     );
                     await redisClient.hdel('waiting_queue', user.userId);
@@ -80,7 +82,7 @@ const startServer = async () => {
     try {
         await connectDB.connectMongo();
         io.on('connection', (socket) => {
-            socket.on('userDetails', async ({ userId, userInterests, aiInterests, nickname }) => {
+            socket.on('userDetails', async ({ userId, userInterests, aiInterests, nickname, question, answer }) => {
                 if (userSocketMap.has(userId)) {
                     console.log('이미 연결된 유저입니다.');
                     socket.disconnect();
@@ -120,6 +122,8 @@ const startServer = async () => {
                             userInterests: userInterestsList,
                             aiInterests: aiInterestsList,
                             nickname,
+                            question,
+                            answer
                         })
                     );
 

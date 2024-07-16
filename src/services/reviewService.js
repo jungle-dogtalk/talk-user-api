@@ -11,8 +11,8 @@ const ratingToPoints = {
 export const submitReview = async (sessionId, reviews) => {
     try {
         for (const review of reviews) {
-            const { username, rating } = review;
-            const user = await User.findOne({ username });
+            const { userId, rating } = review;
+            const user = await User.findById(userId); // userId로 사용자 찾기
 
             if (user) {
                 const points = ratingToPoints[rating] || 0;

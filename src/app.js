@@ -8,6 +8,7 @@ import matchingRoutes from './routes/matchingRoutes.js';
 import audioRoutes from './routes/audioRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import questionRoutes from './routes/questionRoutes.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { OpenVidu } from 'openvidu-node-client';
@@ -41,6 +42,8 @@ app.use('/api/openvidu', openviduRoutes);
 app.use('/api/match', matchingRoutes);
 app.use('/api/audio', audioRoutes);
 app.use('/api/review', reviewRoutes);
+app.use('/api/questions', questionRoutes);
+
 
 // Error handling middleware
 app.use(errorHandler);

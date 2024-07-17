@@ -9,11 +9,13 @@ import audioRoutes from './routes/audioRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
+import topInterestsRoutes from './routes/topInterestsRoutes.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { OpenVidu } from 'openvidu-node-client';
 import config from './config/config.js';
 import 'dotenv/config';
+import './cron/topInterestsCron.js'; // 서버 시작 시 크론 작업 설정 및 실행
 
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
 import {
@@ -43,7 +45,7 @@ app.use('/api/match', matchingRoutes);
 app.use('/api/audio', audioRoutes);
 app.use('/api/review', reviewRoutes);
 app.use('/api/questions', questionRoutes);
-
+app.use('/api/top-interests', topInterestsRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

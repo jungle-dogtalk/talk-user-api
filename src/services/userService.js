@@ -125,7 +125,9 @@ export const getSessionDataService = async (sessionId) => {
 
                 userInterests: parsedUserData.userInterests, // 배열로 저장된 interests
                 aiInterests: parsedUserData.aiInterests,
-                nickname: parsedUserData.nickname
+                nickname: parsedUserData.nickname,
+                question: parsedUserData.question,
+                answer: parsedUserData.answer
             };
         });
 

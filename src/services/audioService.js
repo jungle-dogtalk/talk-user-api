@@ -11,7 +11,9 @@ const openai = new OpenAI({
 });
 
 export const getTopicRecommendations = async (sessionId, conversation) => {
-    const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n 이 대화 흐름에 맞게 이 사람들이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 추천해줘. 각 주제는 줄바꿈을 사용해서 답해줘.`;
+    const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n
+    이 대화 흐름에 맞게 이 사람들이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 추천해줘. 
+    각 주제는 새로운 줄에서 시작하도록 하고, 각 항목을 숫자와 점으로 시작해줘.`;
 
     console.log('AI Prompt: ', prompt);
     const startTime = Date.now();
@@ -29,7 +31,6 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
         for await (const chunk of response) {
             const message = chunk.choices[0].delta.content || '';
             content += message;
-            io.to(sessionId).emit('topicRecommendations', message);
         }
 
         const endTime = Date.now();
@@ -38,6 +39,15 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
             (endTime - startTime) / 1000,
             '초'
         );
+
+        // 주제 내용을 줄바꿈을 기준으로 나누어서 전송
+        const topics = content
+            .split('\n')
+            .filter((topic) => topic.trim().length > 0);
+        topics.forEach((topic) => {
+            io.to(sessionId).emit('topicRecommendations', topic);
+        });
+
         io.to(sessionId).emit('endOfStream');
 
         /*------------본래 주제 한 번에 보내던 코드-------------*/

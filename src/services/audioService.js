@@ -12,7 +12,7 @@ const openai = new OpenAI({
 
 export const getTopicRecommendations = async (sessionId, conversation) => {
     const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n
-    이 대화 흐름에 맞게 이 사람들이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 추천해줘. 
+    이 대화 흐름에 맞게 이 사람들이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 최대 20자 이내로 추천해줘. 
     각 주제는 새로운 줄에서 시작하도록 하고, 각 항목을 숫자와 점으로 시작해줘.`;
 
     console.log('AI Prompt: ', prompt);

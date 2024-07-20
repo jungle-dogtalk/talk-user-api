@@ -228,9 +228,9 @@ export const getSpeechLengths = (sessionId) => {
             percentage: (
                 (transcriptsByUsername[username] / totalLength) *
                 100
-            ).toFixed(0),
+            ).toFixed(0), // 정수로 보냄
         }))
-        .sort((a, b) => b.percentage - a.percentage);
+        .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage)); // 숫자로 변환 후 내림차순 정렬
 
     console.log('발화 비율 계산 후: ', sortedUsers);
     return sortedUsers;

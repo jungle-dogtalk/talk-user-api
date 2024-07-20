@@ -67,14 +67,18 @@ redisSub.on('message', async (channel, message) => {
                             aiInterests: user.aiInterests,
                             nickname: user.nickname,
                             question: user.question,
-                            answer: user.answer
+                            answer: user.answer,
                         })
                     );
                     await redisClient.hdel('waiting_queue', user.userId);
                 }
             }
         }
+        // 대기 큐 길이 업데이트를 모든 클라이언트에 전송
+        const queueLength = await redisClient.hlen('waiting_queue');
+        io.emit('queueLengthUpdate', queueLength);
     }
+
     console.log('마지막', userSocketMap);
 });
 
@@ -82,63 +86,89 @@ const startServer = async () => {
     try {
         await connectDB.connectMongo();
         io.on('connection', (socket) => {
-            socket.on('userDetails', async ({ userId, userInterests, aiInterests, nickname, question, answer }) => {
-                if (userSocketMap.has(userId)) {
-                    console.log('이미 연결된 유저입니다.');
-                    socket.disconnect();
-                    return;
-                }
+            socket.on(
+                'userDetails',
+                async ({
+                    userId,
+                    userInterests,
+                    aiInterests,
+                    nickname,
+                    question,
+                    answer,
+                }) => {
+                    if (userSocketMap.has(userId)) {
+                        console.log('이미 연결된 유저입니다.');
+                        socket.disconnect();
+                        return;
+                    }
 
-                userSocketMap.set(userId, socket.id);
-                console.log('유저소켓맵 -> ', userSocketMap);
+                    userSocketMap.set(userId, socket.id);
+                    console.log('유저소켓맵 -> ', userSocketMap);
 
-                socket.on('disconnect', async () => {
-                    userSocketMap.delete(userId);
-                    await redisClient.hdel('waiting_queue', userId);
-                });
+                    socket.on('disconnect', async () => {
+                        userSocketMap.delete(userId);
+                        await redisClient.hdel('waiting_queue', userId);
 
-                console.log('유저아이디 -> ', userId);
-                console.log('관심사 -> ', userInterests);
+                        // 유저가 대기 큐에서 삭제된 후 대기 큐 길이 업데이트 전송
+                        const queueLength = await redisClient.hlen(
+                            'waiting_queue'
+                        );
+                        io.emit('queueLengthUpdate', queueLength);
+                    });
 
-                const userExists = await redisClient.hexists(
-                    'waiting_queue',
-                    userId
-                );
+                    console.log('유저아이디 -> ', userId);
+                    console.log('관심사 -> ', userInterests);
 
-                if (!userExists) {
-                    const userInterestsList = Array.isArray(userInterests)
-                        ? userInterests
-                        : userInterests.split(',');
-
-                    const aiInterestsList = Array.isArray(aiInterests)
-                        ? aiInterests
-                        : aiInterests.split(',');
-
-                    await redisClient.hset(
+                    const userExists = await redisClient.hexists(
                         'waiting_queue',
-                        userId,
-                        JSON.stringify({
-                            userId,
-                            userInterests: userInterestsList,
-                            aiInterests: aiInterestsList,
-                            nickname,
-                            question,
-                            answer
-                        })
+                        userId
                     );
 
-                    const queueLength = await redisClient.hlen('waiting_queue');
-                    console.log('대기큐 길이 -> ', queueLength);
+                    if (!userExists) {
+                        const userInterestsList = Array.isArray(userInterests)
+                            ? userInterests
+                            : userInterests.split(',');
 
-                    if (queueLength % MATCH_MAKING_PERSON_NUMBERS === 0) {
-                        redisClient.publish('matchmaking', 'match');
+                        const aiInterestsList = Array.isArray(aiInterests)
+                            ? aiInterests
+                            : aiInterests.split(',');
+
+                        await redisClient.hset(
+                            'waiting_queue',
+                            userId,
+                            JSON.stringify({
+                                userId,
+                                userInterests: userInterestsList,
+                                aiInterests: aiInterestsList,
+                                nickname,
+                                question,
+                                answer,
+                            })
+                        );
+
+                        const queueLength = await redisClient.hlen(
+                            'waiting_queue'
+                        );
+                        console.log('대기큐 길이 -> ', queueLength);
+
+                        if (queueLength % MATCH_MAKING_PERSON_NUMBERS === 0) {
+                            redisClient.publish('matchmaking', 'match');
+                        }
+
+                        //새로운 유저가 대기 큐에 추가된 후 대기 큐 길이 업데이트 전송
+                        io.emit('queueLengthUpdate', queueLength);
+                    } else {
+                        console.log('유저가 이미 대기큐에 존재합니다.');
+                        const queueLength = await redisClient.hlen(
+                            'waiting_queue'
+                        );
+                        console.log('현재 대기큐 길이 -> ', queueLength);
+
+                        //대기 큐 길이 전송
+                        io.emit('queueLengthUpdate', queueLength);
                     }
-                } else {
-                    console.log('유저가 이미 대기큐에 존재합니다.');
-                    const queueLength = await redisClient.hlen('waiting_queue');
-                    console.log('현재 대기큐 길이 -> ', queueLength);
                 }
-            });
+            );
         });
 
         server.listen(config.PORT, () => {

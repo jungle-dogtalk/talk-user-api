@@ -199,26 +199,39 @@ export const clearTranscriptsForSession = (sessionId) => {
 
 // 발화량 순위를 반환하는 함수
 export const getSpeechLengths = (sessionId) => {
+    console.log('in getSpeechLengths');
     const sessionData = sessionTranscripts[sessionId];
 
     if (!sessionData) {
         return null;
     }
 
+    // 각 유저의 총 글자수를 계산
     const transcriptsByUsername = sessionData.full.reduce((acc, item) => {
         if (!acc[item.username]) {
             acc[item.username] = 0;
         }
-        acc[item.username] += item.speechLength;
+        acc[item.username] += item.transcript.length; // speechLength 대신 transcript의 길이를 사용
         return acc;
     }, {});
 
+    // 현재까지 쌓인 전체 스크립트의 글자 수 계산
+    const totalLength = Object.values(transcriptsByUsername).reduce(
+        (acc, length) => acc + length,
+        0
+    );
+
+    // 각 유저의 발화 비율 백분율로 계산
     const sortedUsers = Object.keys(transcriptsByUsername)
         .map((username) => ({
             username,
-            speechLength: transcriptsByUsername[username],
+            percentage: (
+                (transcriptsByUsername[username] / totalLength) *
+                100
+            ).toFixed(0),
         }))
-        .sort((a, b) => b.speechLength - a.speechLength);
+        .sort((a, b) => b.percentage - a.percentage);
 
+    console.log('발화 비율 계산 후: ', sortedUsers);
     return sortedUsers;
 };

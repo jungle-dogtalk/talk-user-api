@@ -196,3 +196,29 @@ export const clearTranscriptsForSession = (sessionId) => {
         console.log(`No transcripts found for session ${sessionId}`);
     }
 };
+
+// 발화량 순위를 반환하는 함수
+export const getSpeechLengths = (sessionId) => {
+    const sessionData = sessionTranscripts[sessionId];
+
+    if (!sessionData) {
+        return null;
+    }
+
+    const transcriptsByUsername = sessionData.full.reduce((acc, item) => {
+        if (!acc[item.username]) {
+            acc[item.username] = 0;
+        }
+        acc[item.username] += item.speechLength;
+        return acc;
+    }, {});
+
+    const sortedUsers = Object.keys(transcriptsByUsername)
+        .map((username) => ({
+            username,
+            speechLength: transcriptsByUsername[username],
+        }))
+        .sort((a, b) => b.speechLength - a.speechLength);
+
+    return sortedUsers;
+};

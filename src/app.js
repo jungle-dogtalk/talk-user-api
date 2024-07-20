@@ -21,6 +21,7 @@ import './cron/topInterestsCron.js'; // 서버 시작 시 크론 작업 설정 �
 import {
     clearTranscriptsForSession,
     recommendTopics,
+    getSpeechLengths,
 } from './controllers/audioController.js';
 
 const app = express();
@@ -80,6 +81,15 @@ io.on('connection', (socket) => {
                     `Session ${sessionId} has ended and transcripts have been cleared.`
                 );
             }
+        }
+    });
+
+    socket.on('requestSpeechLengths', (data) => {
+        const { sessionId } = data;
+        const sortedUsers = getSpeechLengths(sessionId);
+
+        if (sortedUsers) {
+            io.to(sessionId).emit('speechLengths', sortedUsers);
         }
     });
 

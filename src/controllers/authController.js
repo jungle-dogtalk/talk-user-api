@@ -9,7 +9,7 @@ export const register = async (req, res) => {
             return res.status(500).json({ error: err.message });
         }
 
-        const { username, password, name, email, interests, nickname } =
+        const { username, password, name, email, interests, nickname, mbti  } =
             req.body;
         const profileImage = req.file;
 
@@ -23,6 +23,7 @@ export const register = async (req, res) => {
                 interests2: [], // interests2를 빈 배열로 초기화
                 nickname,
                 profileImage,
+                mbti,
             };
             const { token, user } = await authService.register(userData);
 

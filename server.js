@@ -66,7 +66,7 @@ redisSub.on('message', async (channel, message) => {
                             userInterests: user.userInterests,
                             aiInterests: user.aiInterests,
                             nickname: user.nickname,
-                            mati: user.mbti,
+                            mbti: user.mbti,
                             question: user.question,
                             answer: user.answer,
                         })

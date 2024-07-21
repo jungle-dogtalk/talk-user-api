@@ -12,8 +12,7 @@ const openai = new OpenAI({
 
 export const getTopicRecommendations = async (sessionId, conversation) => {
     const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n
-    이 대화 흐름에 맞게 이 사람들이 다음으로 얘기하기 좋을만한 주제를 3가지 정도 최대 20자 이내로 추천해줘. 
-    각 주제는 새로운 줄에서 시작하도록 하고, 각 항목을 숫자와 점으로 시작해줘.`;
+    이 대화 흐름에 맞고 사람들이 흥미로워할 만한 주제를 1개만 최대 20자 이내로 추천해줘.`;
 
     console.log('AI Prompt: ', prompt);
     const startTime = Date.now();
@@ -40,23 +39,13 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
             '초'
         );
 
-        // 주제 내용을 줄바꿈을 기준으로 나누어서 전송
-        const topics = content
-            .split('\n')
-            .filter((topic) => topic.trim().length > 0);
-        topics.forEach((topic) => {
-            io.to(sessionId).emit('topicRecommendations', topic);
-        });
+        // ?를 제외한 특수문자 및 숫자 제거
+        const topic = content.replace(/[^\w\s?가-힣]/g, '').trim();
 
+        console.log('추천 주제: ', topic);
+
+        io.to(sessionId).emit('topicRecommendations', topic);
         io.to(sessionId).emit('endOfStream');
-
-        /*------------본래 주제 한 번에 보내던 코드-------------*/
-        // const topicsText = response.choices[0].message.content.trim();
-        // const topics = topicsText
-        //     .split('\n')
-        //     .map((topic) => topic.trim())
-        //     .filter((topic) => topic.length > 0);
-        // return ApiResponse.success({ topics });
     } catch (error) {
         console.error('Error fetching topic recommendations:', error);
         throw ApiResponse.error('주제 추천 실패', 500);
@@ -66,6 +55,7 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
 export const getInterest = async (username, transcript) => {
     const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5개의 단어로만 특정해줘.
     각 관심사는 예를 들어 '음식', '여행' 이런 식으로 의미가 있는 단어로만 답해줘. 
+    문장이 아닌 단어로 말해줘.
     각 관심사는 줄바꿈을 통해 새로운 줄에서 시작하도록 해줘.
     대화 내용: '${transcript}'`;
     console.log('관심사 특정 요청: ', prompt);
@@ -119,7 +109,9 @@ export const getFeedback = async (username, conversation) => {
     다음 대화 내용을 바탕으로 ${username}의 대화 스타일에 대한 피드백을 제공해줘. (대화를 잘 하는지, 잘 참여하는지, 부족한 점은 없는지 등등에 대한 분석)
     
     대화 내용:
-    ${conversation}`;
+    ${conversation}
+    
+    대화 내용은 언급하지 말고 피드백만 제공해줘.`;
 
     const response = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',

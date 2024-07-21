@@ -235,3 +235,36 @@ export const getSpeechLengths = (sessionId) => {
     console.log('발화 비율 계산 후: ', sortedUsers);
     return sortedUsers;
 };
+
+// 통화가 끝난 후 해당 대화에 대한 피드백 요청 및 응답 반환
+export const requestFeedback = async (req, res) => {
+    const { username, sessionId } = req.body;
+    const sessionData = sessionTranscripts[sessionId];
+
+    if (!sessionData) {
+        return res.status(404).json(ApiResponse.error('Session not found'));
+    }
+
+    const conversation = sessionData.full
+        .map((item) => `${item.username}: ${item.transcript}`)
+        .join('\n');
+
+    try {
+        const feedbackData = await audioService.getFeedback(
+            username,
+            conversation
+        );
+        console.log(`AI 피드백: ${feedbackData}`);
+        res.json(
+            ApiResponse.success(
+                feedbackData,
+                'Feedback generated successfully.'
+            )
+        );
+    } catch (error) {
+        console.error('Error generating feedback:', error);
+        res.status(500).json(
+            ApiResponse.error('Failed to generate feedback', error.message)
+        );
+    }
+};

@@ -116,9 +116,7 @@ export const getInterest = async (username, transcript) => {
 
 export const getFeedback = async (username, conversation) => {
     const prompt = `
-    1. 다음 대화에서 얘기하고 있는 것들을 총 5가지의 키워드로 추출해줘.
-    2. 1번에서 뽑아온 각 키워드들에서 다음에 추가적으로 이야기하면 좋을 주제 또는 콘텐츠를 추천해줘.
-    3. 대화 내용을 바탕으로 ${username}의 대화 스타일에 대한 피드백을 제공해줘. (대화를 잘 하는지, 잘 참여하는지, 부족한 점은 없는지 등등에 대한 분석)
+    다음 대화 내용을 바탕으로 ${username}의 대화 스타일에 대한 피드백을 제공해줘. (대화를 잘 하는지, 잘 참여하는지, 부족한 점은 없는지 등등에 대한 분석)
     
     대화 내용:
     ${conversation}`;
@@ -127,30 +125,12 @@ export const getFeedback = async (username, conversation) => {
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 500,
+        n: 1,
+        temperature: 0.7,
     });
 
-    // 응답 전체를 로그로 출력하여 형식을 확인
-    console.log('OpenAI API response:', response);
-
-    if (!response.choices || response.choices.length === 0) {
-        throw new Error('No choices found in the response');
-    }
-
     const feedback = response.choices[0].message.content.trim();
+    console.log('AI 피드백 응답: ', feedback);
 
-    // 피드백을 섹션으로 분리하기 전에 전체 피드백을 로그로 출력
-    console.log('Feedback content:', feedback);
-
-    const sections = feedback.split('\n\n');
-    if (sections.length < 3) {
-        throw new Error('Unexpected format of feedback');
-    }
-
-    const [keywordsSection, topicsSection, userFeedbackSection] = sections;
-
-    const keywords = keywordsSection.split('\n');
-    const recommendedTopics = topicsSection.split('\n');
-    const userFeedback = userFeedbackSection;
-
-    return { keywords, recommendedTopics, userFeedback };
+    return feedback;
 };

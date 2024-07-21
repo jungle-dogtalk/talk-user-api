@@ -64,6 +64,12 @@ io.on('connection', (socket) => {
         activeUsers[sessionId].add(socket.id);
         socket.join(sessionId); // 해당 sessionId에 들어감 (그룹화)
         console.log(`User ${socket.id} joined session ${sessionId}`);
+
+        //// 4명의 사용자가 session에 들어올 시 자기소개 이벤트 발생
+        // if (activeUsers[sessionId].size === 4) {
+        //     io.to(sessionId).emit('welcome');
+        //     console.log(`자기소개 시간: ${sessionId}`);
+        // }
     });
 
     // 세션을 떠날 때

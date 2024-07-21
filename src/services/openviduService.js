@@ -61,7 +61,10 @@ export const createToken = async (sid, userInfo) => {
 
   const connectionProperties = {
     role: "PUBLISHER",
-    data: userInfo.nickname,
+    data: JSON.stringify({
+      nickname: userInfo.nickname,
+      userId: userId,
+    }),
     kurentoOptions: {
       allowedFilters: ["GStreamerFilter", "FaceOverlayFilter"]
     }

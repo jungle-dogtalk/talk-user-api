@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
     reviewAverageScore: { type: Number, default: 0 }, // 리뷰 평균 점수 필드
     totalReviewScore: { type: Number, default: 0 }, // 총 리뷰 점수
     totalReviewCount: { type: Number, default: 0 }, // 총 리뷰 수
+    mbti: { type: String, required: false },
 });
 
 // 사용자 저장 전에 비밀번호 해시화

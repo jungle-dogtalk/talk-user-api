@@ -50,6 +50,7 @@ export const register = async (userData) => {
         interests2, // interests2 필드 추가
         nickname,
         profileImage,
+        mbti,
     } = userData;
 
     let profileImageUrl = null; //프로필 이미지 URL 초기화
@@ -93,6 +94,7 @@ export const register = async (userData) => {
             interests2, // interests2 필드 추가
             nickname,
             profileImage: profileImageUrl,
+            mbti,
         });
 
         await user.save();

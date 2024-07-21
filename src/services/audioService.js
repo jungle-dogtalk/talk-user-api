@@ -64,7 +64,10 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
 };
 
 export const getInterest = async (username, transcript) => {
-    const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5가지의 단어로 특정해줘. 각 관심사는 예를 들어 음식\n여행\n 이런 식으로 줄바꿈을 사용해서 단어로만 답해줘. 대화 내용: '${transcript}'`;
+    const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5개의 단어로만 특정해줘.
+    각 관심사는 예를 들어 '음식', '여행' 이런 식으로 의미가 있는 단어로만 답해줘. 
+    각 관심사는 줄바꿈을 통해 새로운 줄에서 시작하도록 하고, 
+    대화 내용: '${transcript}'`;
     console.log('관심사 특정 요청: ', prompt);
     const startTime = Date.now();
     try {
@@ -79,7 +82,7 @@ export const getInterest = async (username, transcript) => {
         const interestsText = response.choices[0].message.content.trim();
         const interests = interestsText
             .split('\n')
-            .map((interest) => interest.trim())
+            .map((interest) => interest.replace(/[-.,0-9]/g, '').trim()) // 하이픈, 숫자, 마침표 제거 및 트림
             .filter((interest) => interest.length > 0);
 
         const endTime = Date.now();

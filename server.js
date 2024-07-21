@@ -66,6 +66,7 @@ redisSub.on('message', async (channel, message) => {
                             userInterests: user.userInterests,
                             aiInterests: user.aiInterests,
                             nickname: user.nickname,
+                            mati: user.mbti,
                             question: user.question,
                             answer: user.answer,
                         })
@@ -93,6 +94,7 @@ const startServer = async () => {
                     userInterests,
                     aiInterests,
                     nickname,
+                    mbti,
                     question,
                     answer,
                 }) => {
@@ -141,6 +143,7 @@ const startServer = async () => {
                                 userInterests: userInterestsList,
                                 aiInterests: aiInterestsList,
                                 nickname,
+                                mbti,
                                 question,
                                 answer,
                             })

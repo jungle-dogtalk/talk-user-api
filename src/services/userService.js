@@ -126,6 +126,7 @@ export const getSessionDataService = async (sessionId) => {
                 userInterests: parsedUserData.userInterests, // 배열로 저장된 interests
                 aiInterests: parsedUserData.aiInterests,
                 nickname: parsedUserData.nickname,
+                mbti: parsedUserData.mbti,
                 question: parsedUserData.question,
                 answer: parsedUserData.answer
             };

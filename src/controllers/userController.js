@@ -17,13 +17,13 @@ export const updateProfile = async (req, res) => {
             }
 
             // 요청 본문에서 'interests' 필드 추출
-            const { interests } = req.body;
+            const { interests, mbti } = req.body;
 
             // JSON 문자열을 배열로 변환
             const parsedInterests = JSON.parse(interests); 
 
              // 사용자 프로필 이미지와 관심사를 업데이트하는 서비스 함수 호출
-            const updatedUser = await userService.updateUserProfile(userId, req.file, parsedInterests);
+            const updatedUser = await userService.updateUserProfile(userId, req.file, parsedInterests, mbti);
 
             // 업데이트된 사용자 정보를 클라이언트에 반환
             res.status(200).json({ user: updatedUser });

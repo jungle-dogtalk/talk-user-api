@@ -47,7 +47,7 @@ const uploadFileToS3 = async (file) => {
 };
 
 // 사용자 프로필을 업데이트하는 함수
-export const updateUserProfile = async (userId, file, interests) => {
+export const updateUserProfile = async (userId, file, interests, mbti) => {
     try {
         let profileImageUrl = null;
 
@@ -65,6 +65,10 @@ export const updateUserProfile = async (userId, file, interests) => {
         // 관심사가 있으면 업데이트할 데이터에 추가
         if (interests) {
             updateData.interests = interests;
+        }
+
+        if (mbti) {
+            updateData.mbti = mbti; // MBTI 추가
         }
 
         // 사용자의 프로필을 업데이트

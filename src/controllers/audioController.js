@@ -10,7 +10,7 @@ const MAX_TRANSCRIPT = 5;
 
 // 클라이언트로부터 텍스트를 받아서 저장하는 함수
 export const receiveTranscript = (req, res) => {
-    const { username, transcript, sessionId } = req.body;
+    const { nickname, transcript, sessionId } = req.body;
     if (!sessionTranscripts[sessionId]) {
         sessionTranscripts[sessionId] = { full: [], partial: [] };
     }
@@ -19,7 +19,7 @@ export const receiveTranscript = (req, res) => {
         const cleanedTranscript = transcript.replace(/\s+/g, ''); // 띄어쓰기 제거
         const speechLength = cleanedTranscript.length; // 사용자 발언에 대한 text 길이 계산
         sessionTranscripts[sessionId].full.push({
-            username,
+            nickname,
             transcript, // 띄어쓰기 제거하지 않은 원본 텍스트
             speechLength,
         });
@@ -31,7 +31,7 @@ export const receiveTranscript = (req, res) => {
         if (sessionTranscripts[sessionId].partial.length >= MAX_TRANSCRIPT) {
             sessionTranscripts[sessionId].partial.shift();
         }
-        sessionTranscripts[sessionId].partial.push({ username, transcript });
+        sessionTranscripts[sessionId].partial.push({ nickname, transcript });
 
         console.log(
             'receiveTranscript - sessionTranscripts:',
@@ -69,7 +69,7 @@ export const getTranscripts = (req, res) => {
 export const endCall = async (req, res) => {
     console.log('ENDCALL');
     try {
-        const { username, sessionId } = req.body;
+        const { nickname, sessionId } = req.body;
         const sessionData = sessionTranscripts[sessionId];
 
         if (!sessionData) {
@@ -77,13 +77,13 @@ export const endCall = async (req, res) => {
             return res.status(404).json(ApiResponse.error('Session not found'));
         }
 
-        // username 별로 발언들을 모으기: reduce를 이용해 username 별 그룹화된 객체로 변환
+        // nickname 별로 발언들을 모으기: reduce를 이용해 nickname 별 그룹화된 객체로 변환
         const transcriptsByUsername = sessionData.full.reduce((acc, item) => {
             console.log('item:', item);
-            if (!acc[item.username]) {
-                acc[item.username] = [];
+            if (!acc[item.nickname]) {
+                acc[item.nickname] = [];
             }
-            acc[item.username].push(item);
+            acc[item.nickname].push(item);
             return acc;
         }, {});
 
@@ -105,13 +105,13 @@ export const endCall = async (req, res) => {
         );
 
         // 사용자 DB에 발화 지수 및 경청 지수 업데이트 로직
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ nickname });
         if (!user) {
             throw new Error('User not found');
         }
 
         // 새로운 유저 발화 & 경청 지수 (null이라면 0으로 설정)
-        const newUtterance = parseFloat(speechPercentages[username]) || 0;
+        const newUtterance = parseFloat(speechPercentages[nickname]) || 0;
         const newListen = 100 - newUtterance;
 
         // 기존 값이 0이라면 새로운 값으로 설정
@@ -127,16 +127,16 @@ export const endCall = async (req, res) => {
 
         await user.save();
 
-        console.log(`${username}의 발화량: ${speechPercentages[username]}`);
-        console.log('username별 스크립트:', transcriptsByUsername);
+        console.log(`${nickname}의 발화량: ${speechPercentages[nickname]}`);
+        console.log('nickname별 스크립트:', transcriptsByUsername);
 
         // 요청한 사용자의 발언을 기반으로 관심사 도출
-        const userTranscripts = transcriptsByUsername[username] || [];
+        const userTranscripts = transcriptsByUsername[nickname] || [];
         const transcriptText = userTranscripts
             .map((item) => item.transcript)
             .join('\n');
         const interests = await audioService.getInterest(
-            username,
+            nickname,
             transcriptText
         );
 
@@ -144,14 +144,14 @@ export const endCall = async (req, res) => {
 
         // 피드백 요청 및 저장
         const feedback = await audioService.getFeedback(
-            username,
+            nickname,
             transcriptText
         );
 
         const client = {
-            username,
+            nickname,
             interests,
-            speech: speechPercentages[username],
+            speech: speechPercentages[nickname],
             feedback: feedback,
             // 추후에 speechPercentages 자체를 넘기고 userlist를 넘겨서 클라이언트 쪽에서 다른 사용자들의 발화량도 뿌려줄 수 있도록
             // + 경청량은 발화량의 반비례
@@ -176,7 +176,7 @@ export const recommendTopics = async (sessionId) => {
     }
 
     const conversation = sessionData.partial
-        .map((item) => `${item.username}: ${item.transcript}`)
+        .map((item) => `${item.nickname}: ${item.transcript}`)
         .join('\n');
     console.log('대화 스크립트: ', conversation);
     try {
@@ -216,10 +216,10 @@ export const getSpeechLengths = (sessionId) => {
 
     // 각 유저의 총 글자수를 계산
     const transcriptsByUsername = sessionData.full.reduce((acc, item) => {
-        if (!acc[item.username]) {
-            acc[item.username] = 0;
+        if (!acc[item.nickname]) {
+            acc[item.nickname] = 0;
         }
-        acc[item.username] += item.transcript.length; // speechLength 대신 transcript의 길이를 사용
+        acc[item.nickname] += item.transcript.length; // speechLength 대신 transcript의 길이를 사용
         return acc;
     }, {});
 
@@ -231,10 +231,10 @@ export const getSpeechLengths = (sessionId) => {
 
     // 각 유저의 발화 비율 백분율로 계산
     const sortedUsers = Object.keys(transcriptsByUsername)
-        .map((username) => ({
-            username,
+        .map((nickname) => ({
+            nickname,
             percentage: (
-                (transcriptsByUsername[username] / totalLength) *
+                (transcriptsByUsername[nickname] / totalLength) *
                 100
             ).toFixed(0), // 정수로 보냄
         }))

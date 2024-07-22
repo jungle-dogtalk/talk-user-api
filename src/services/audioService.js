@@ -52,7 +52,7 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
     }
 };
 
-export const getInterest = async (username, transcript) => {
+export const getInterest = async (nickname, transcript) => {
     const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5개의 단어로만 특정해줘.
     각 관심사는 예를 들어 '음식', '여행' 이런 식으로 의미가 있는 단어로만 답해줘. 
     문장이 아닌 단어로 말해줘.
@@ -84,7 +84,7 @@ export const getInterest = async (username, transcript) => {
         console.log('관심사 요청 AI 반환값:', interests);
 
         // 사용자 DB에 관심사 업데이트
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ nickname });
         if (!user) {
             throw new Error('User not found');
         }
@@ -104,9 +104,9 @@ export const getInterest = async (username, transcript) => {
     }
 };
 
-export const getFeedback = async (username, conversation) => {
+export const getFeedback = async (nickname, conversation) => {
     const prompt = `
-    다음 대화 내용을 바탕으로 ${username}의 대화 스타일에 대한 피드백을 제공해줘. (대화를 잘 하는지, 잘 참여하는지, 부족한 점은 없는지 등등에 대한 분석)
+    다음 대화 내용을 바탕으로 ${nickname}의 대화 스타일에 대한 피드백을 제공해줘. (대화를 잘 하는지, 잘 참여하는지, 부족한 점은 없는지 등등에 대한 분석)
     
     대화 내용:
     ${conversation}

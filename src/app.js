@@ -90,11 +90,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('requestSpeechLengths', (data) => {
+    socket.on('requestSpeechLengths', async (data) => {
         const { sessionId } = data;
-        const sortedUsers = getSpeechLengths(sessionId);
+        const sortedUsers = await getSpeechLengths(sessionId);
 
         if (sortedUsers) {
+            console.log(
+                `To ${sessionId}, Users: ${JSON.stringify(sortedUsers)}`
+            );
             io.to(sessionId).emit('speechLengths', sortedUsers);
         }
     });

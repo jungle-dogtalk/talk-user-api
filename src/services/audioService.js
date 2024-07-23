@@ -12,7 +12,7 @@ const openai = new OpenAI({
 
 export const getTopicRecommendations = async (sessionId, conversation) => {
     const prompt = `이게 지금까지 사람들이 대화한 스크립트야.:\n${conversation}\n
-    이 대화 흐름에 맞고 사람들이 흥미로워할 만한 주제를 1개만 최대 20자 이내로 추천해줘.`;
+    이 대화 흐름에 맞고 사람들이 흥미로워할 만한 주제를 1개만 최대 15자 이내로 요약해서 추천해줘.`;
 
     console.log('AI Prompt: ', prompt);
     const startTime = Date.now();

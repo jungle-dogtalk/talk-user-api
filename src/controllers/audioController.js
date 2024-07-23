@@ -6,7 +6,7 @@ import User from '../models/User.js'; // 사용자 모델 가져오기
 // 세션 별 대화 내용 저장 스크립트
 let sessionTranscripts = {};
 // partial Script 배열 제한
-const MAX_TRANSCRIPT = 5;
+const MAX_TRANSCRIPT = 8;
 
 // 클라이언트로부터 텍스트를 받아서 저장하는 함수
 export const receiveTranscript = (req, res) => {
@@ -214,16 +214,16 @@ export const getSpeechLengths = (sessionId) => {
         return null;
     }
 
-    // 각 유저의 총 글자수를 계산
+    // 각 유저의 총 발언 길이를 계산
     const transcriptsByUsername = sessionData.full.reduce((acc, item) => {
         if (!acc[item.nickname]) {
             acc[item.nickname] = 0;
         }
-        acc[item.nickname] += item.transcript.length; // speechLength 대신 transcript의 길이를 사용
+        acc[item.nickname] += item.speechLength;
         return acc;
     }, {});
 
-    // 현재까지 쌓인 전체 스크립트의 글자 수 계산
+    // 현재까지 쌓인 전체 스크립트의 발언 길이 계산
     const totalLength = Object.values(transcriptsByUsername).reduce(
         (acc, length) => acc + length,
         0

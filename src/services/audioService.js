@@ -22,7 +22,7 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 200, // 생성할 최대 토큰 수
             n: 1, // 생성할 응답 개수
-            temperature: 0.7, // 응답의 창의성 조정
+            temperature: 0.6, // 응답의 창의성 조정
             stream: true, // 스트림 -> 응답을 한 글자씩 읽어올 수 있음
         });
         let content = '';
@@ -40,9 +40,13 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
         );
 
         // ?를 제외한 특수문자 및 숫자 제거
-        const topic = content.replace(/[^\w\s?가-힣]/g, '').trim();
+        let topic = content.replace(/[^\w\s?가-힣]/g, '').trim();
 
         console.log('추천 주제: ', topic);
+
+        if (topic.length > 20) {
+            topic = '최근에 가장 재밌게 본 영화';
+        }
 
         io.to(sessionId).emit('topicRecommendations', topic);
         io.to(sessionId).emit('endOfStream');

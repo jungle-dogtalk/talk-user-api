@@ -10,6 +10,8 @@ const calculateSimilarity = async (userA, userB) => {
         {
             interestsA: userA.userInterests,
             interestsB: userB.userInterests,
+            AIinterestsA: userA.aiInterests,
+            AIinterestsB: userB.aiInterests,
             // listeningA: userA.listeningIndex,
             // listeningB: userB.listeningIndex,
             // speakingA: userA.speakingIndex,
@@ -52,6 +54,7 @@ const findBestMatch = async (user, parsedUsers) => {
     // 모든 유저와의 유사도 계산 (Promise.all 사용)
     const similarityPromises = otherUsers.map(async (otherUser) => {
         const similarity = await calculateSimilarity(user, otherUser);
+
         return { user: otherUser, similarity };
     });
 

@@ -57,10 +57,9 @@ export const getTopicRecommendations = async (sessionId, conversation) => {
 };
 
 export const getInterest = async (nickname, transcript) => {
-    const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5개의 단어로만 특정해줘.
-    각 관심사는 예를 들어 '음식', '여행' 이런 식으로 의미가 있는 단어로만 답해줘. 
-    문장이 아닌 단어로 말해줘.
-    각 관심사는 줄바꿈을 통해 새로운 줄에서 시작하도록 해줘.
+    const prompt = `다음 대화 내용을 기반으로 이 말을 한 사람의 관심사를 5개의 명사로 예측해줘.
+    각 관심사는 예를 들어 '음식', '여행', '디스토피아' 이런 식으로 의미가 있는 명사로만 답해줘.
+    문장이 아닌 명사로, 각 명사는 줄바꿈을 통해 새로운 줄에서 시작하도록 해줘.
     대화 내용: '${transcript}'`;
     console.log('관심사 특정 요청: ', prompt);
     const startTime = Date.now();
@@ -73,11 +72,37 @@ export const getInterest = async (nickname, transcript) => {
             temperature: 0.7,
         });
 
-        const interestsText = response.choices[0].message.content.trim();
-        const interests = interestsText
-            .split('\n')
-            .map((interest) => interest.replace(/[-.,0-9]/g, '').trim()) // 하이픈, 숫자, 마침표 제거 및 트림
-            .filter((interest) => interest.length > 0);
+        let interestsText = response.choices[0].message.content.trim();
+        // 전처리: 특수문자, 숫자 제거 및 조사를 제거한 명사만 추출 + 앞뒤 공백 제거(trim)
+        interestsText = interestsText
+            .replace(/[-.,0-9]/g, '')
+            .replace(/[^가-힣\s]/g, '')
+            .trim();
+
+        // 공백을 기준으로 분할해 배열 생성
+        let interestArray = interestsText.split(/\s+/);
+
+        // 비관련 단어 목록
+        const irrelevantWords = [
+            '오케이',
+            '예',
+            '네',
+            '아니요',
+            '있습니다',
+            '없습니다',
+            '좋습니다',
+            '나쁩니다',
+            '그것',
+            '그런',
+            '그려',
+            '그렇게',
+            // 테스트 진행하며 더 추가할 수 있음
+        ];
+
+        // 비관련 단어 필터링
+        interestArray = interestArray.filter(
+            (word) => !irrelevantWords.includes(word)
+        );
 
         const endTime = Date.now();
         console.log(
@@ -85,7 +110,7 @@ export const getInterest = async (nickname, transcript) => {
             (endTime - startTime) / 1000,
             '초'
         );
-        console.log('관심사 요청 AI 반환값:', interests);
+        console.log('관심사 요청 AI 반환값:', interestArray);
 
         // 사용자 DB에 관심사 업데이트
         const user = await User.findOne({ nickname });
@@ -93,15 +118,15 @@ export const getInterest = async (nickname, transcript) => {
             throw new Error('User not found');
         }
 
-        // 기존 interests2 필드를 삭제하고 새로 추가
+        // interests2 필드에 문자열 배열을 할당
         const updatedUser = await User.findByIdAndUpdate(
             user._id,
-            { interests2: interests },
+            { interests2: interestArray },
             { new: true } // 업데이트된 문서를 반환받기 위해 new: true 옵션 사용
         );
         console.log('User interests updated successfully:', updatedUser);
 
-        return interests;
+        return interestArray;
     } catch (error) {
         console.error('Error fetching interests:', error);
         throw ApiResponse.error('Failed to fetch interests', 500);

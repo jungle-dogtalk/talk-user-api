@@ -12,8 +12,6 @@ const userSocketMap = new Map();
 
 const redisClient = await connectRedis.connectRedis();
 const redisSub = await connectRedis.connectRedis();
-let lastQueueLength = 0;
-let throttleTimeout = null;
 
 redisSub.subscribe('matchmaking');
 redisSub.on('message', async (channel, message) => {
@@ -77,29 +75,12 @@ redisSub.on('message', async (channel, message) => {
             }
         }
         // 대기 큐 길이 업데이트를 모든 클라이언트에 전송
-        // const queueLength = await redisClient.hlen('waiting_queue');
-        throttledUpdateQueueLength();
+        const queueLength = await redisClient.hlen('waiting_queue');
+        io.emit('queueLengthUpdate', queueLength);
     }
+
+    console.log('마지막', userSocketMap);
 });
-
-// 대기큐 길이 변화 알림
-const updateQueueLength = async () => {
-    const currentQueueLength = await redisClient.hlen('waiting_queue');
-    if (currentQueueLength !== lastQueueLength) {
-        lastQueueLength = currentQueueLength;
-        io.emit('queueLengthUpdate', currentQueueLength);
-    }
-}
-
-// 대기큐 길이 업데이트 (1초 제한)
-const throttledUpdateQueueLength = () => {
-    if (!throttleTimeout) {
-        throttleTimeout = setTimeout(() => {
-            updateQueueLength();
-            throttleTimeout = null;
-        }, 1000); // 1초 간격으로 제한
-    }
-}
 
 const startServer = async () => {
     try {
@@ -130,7 +111,10 @@ const startServer = async () => {
                         await redisClient.hdel('waiting_queue', userId);
 
                         // 유저가 대기 큐에서 삭제된 후 대기 큐 길이 업데이트 전송
-                        throttledUpdateQueueLength();
+                        const queueLength = await redisClient.hlen(
+                            'waiting_queue'
+                        );
+                        io.emit('queueLengthUpdate', queueLength);
                     });
 
                     console.log('유저아이디 -> ', userId);
@@ -173,12 +157,17 @@ const startServer = async () => {
                             redisClient.publish('matchmaking', 'match');
                         }
 
-                        //새로운 유저가 대기 큐에 추가된 후 대기 큐 길이 업데이트 후 전송
-                        throttledUpdateQueueLength();
+                        //새로운 유저가 대기 큐에 추가된 후 대기 큐 길이 업데이트 전송
+                        io.emit('queueLengthUpdate', queueLength);
                     } else {
                         console.log('유저가 이미 대기큐에 존재합니다.');
+                        const queueLength = await redisClient.hlen(
+                            'waiting_queue'
+                        );
+                        console.log('현재 대기큐 길이 -> ', queueLength);
+
                         //대기 큐 길이 전송
-                        throttledUpdateQueueLength();
+                        io.emit('queueLengthUpdate', queueLength);
                     }
                 }
             );

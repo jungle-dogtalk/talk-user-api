@@ -115,7 +115,7 @@ export const getFeedback = async (nickname, conversation) => {
     대화 내용:
     ${conversation}
     
-    대화 내용은 언급하지 말고 피드백만 90~100글자 사이로 제공해줘.`;
+    대화 내용은 언급하지 말고 피드백만 50글자 사이로 제공해줘.`;
 
     const response = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',

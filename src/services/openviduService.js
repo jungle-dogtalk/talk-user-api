@@ -1,36 +1,115 @@
-import { OpenVidu } from 'openvidu-node-client';
-import config from '../config/config.js';
+// import { OpenVidu } from 'openvidu-node-client';
+// import config from '../config/config.js';
+import { OV } from '../app.js';
+import { redisClient } from '../../server.js';
+import BadRequestError from '../errors/BadRequestError.js';
 
 // OpenVidu 객체를 생성하여 OpenQVidu 서버와의 통신 설정
-const OV = new OpenVidu(config.OPENVIDU_URL, config.OPENVIDU_SECRET);
 
+const ALLOCATED_TIME_FOR_SESSION = (1000 * 60 * 5) + 5000;  // 5분 5초
+
+// OpenVidu 새로운 세션 생성
 export const createSession = async () => {
   try {
-    // 새로운 세션을 생성하고 생성된 세션 객체 반환
+    console.log('Creating new session');
     const session = await OV.createSession();
-    return session.sessionId; // 생성된 세션의 ID 반환
+    const sessionId = session.sessionId;
+
+    if (sessionId) {
+      const finishTime = Date.now() + 5 * 60 * 1000; // 현재 시각 + 5분 
+      // redis 세션에 대한 메타정보 삽입 (타이머)
+      await redisClient.hset(
+        sessionId + '_meta',
+        'finishTime',
+        finishTime.toString()
+      );
+      setTimeout(() => {
+        destorySession(sessionId);
+      }, ALLOCATED_TIME_FOR_SESSION);
+    }
+
+    return sessionId;
   } catch (error) {
-    console.error('Error creating session:', error);
+    console.error('세션 핸들링 도중 에러가 발생하였습니다.', error);
     throw error;
   }
 };
 
-export const createToken = async (sessionId) => {
-  try {
-    
-    // 활성 세션 중에서 주어진 세션 ID와 일치하는 세션을 찾음
-    const session = OV.activeSessions.find(session => session.sessionId === sessionId);
-    
-    // 세션을 찾이 못한 경우 에러를 발생 시킴. 
-    if (!session) {
-      throw new Error(`Session not found: ${sessionId}`);
-    }
+export const createToken = async (sid, userInfo) => {
+  console.log('Creating token for sessionId:', sid);
+  const sessions = await OV.fetch();
+  console.log('가용 세션 리스트? -> ', sessions); // 단순 fetch 메소드로는 조회가 안 됨
+  // console.log('액티브 세션? -> ', OV.activeSessions);
 
-    // 해당 세션에 대한 새로운 연결을 생성하고, 생성된 연결 객체 반환
-    const connection = await session.createConnection();
-    return connection.token;
+  const session = OV.activeSessions.find(
+    (s) => s.sessionId === sid
+  );
+
+  if (!session) {
+    throw new Error(`Session not found: ${sid}`);
+  }
+
+  console.log('세션 id -> ', session.sessionId);
+  console.log('유저 id -> ', userInfo.username);
+
+  const userId = userInfo.username;
+
+  const isIncludedUser = await redisClient.hexists(session.sessionId, userId);
+  if (!isIncludedUser) {
+    throw new BadRequestError("해당 세션에 입장할 수 없는 사용자입니다.");
+  }
+
+  const connectionProperties = {
+    role: "PUBLISHER",
+    data: JSON.stringify({
+      nickname: userInfo.nickname,
+      userId: userId,
+    }),
+    kurentoOptions: {
+      allowedFilters: ["GStreamerFilter", "FaceOverlayFilter"]
+    }
+  };
+
+  const connection = await session.createConnection(connectionProperties);
+  return connection.token;
+};
+
+export const getSessions = async () => {
+  try {
+    const sessions = await OV.fetch();
+    return sessions;
   } catch (error) {
     console.error('Error creating token:', error);
     throw error;
   }
-};
+}
+
+export const calculateTimer = async (sessionId) => {
+  if (!sessionId) {
+    throw new BadRequestError('세션 id 누락 오류'); // TODO: 잘못된 세션 ID에 대한 예외처리도 필요
+  }
+
+  const metaData = await redisClient.hgetall(sessionId + '_meta');
+  const { finishTime } = metaData;
+
+  if (!finishTime) {
+    return 0;
+  }
+
+  const finishTimeMs = parseInt(finishTime, 10);
+  const currentTimeMs = Date.now();
+  const remainingTimeMs = finishTimeMs - currentTimeMs;
+  const remainingTimeSeconds = Math.floor(remainingTimeMs / 1000);
+
+  return Math.max(remainingTimeSeconds, 0);
+}
+
+// 시간초과에 의한 세션 종료
+const destorySession = async (sessionId) => {
+  const session = OV.activeSessions.find(s => s.sessionId === sessionId);
+  if (!session) {
+    throw new BadRequestError(`존재하지 않는 세션: ${sessionId}`);
+  }
+
+  await session.close();
+}

@@ -1,23 +1,31 @@
-import jwt from 'jsonwebtoken'; // JSON Web Token 라이브러리 가져오기
-import config from '../config/config.js'; // 설정 파일 가져오기
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js'; // User 모델을 가져옵니다.
 
-export default (req, res, next) => {
+// 요청이 인증된 사용자인지 확인.
+const authMiddleware = async (req, res, next) => {
 
-  // 요청 헤더에서 Authorization 토큰 가져오기.
-  const token = req.header('Authorization');
+    // 토큰 추출
+    const token = req.headers.authorization?.split(' ')[1]; // 헤더에서 토큰을 추출합니다.
 
-  // 토큰이 없으면 401 상태 코드와 메시지 반환
-  if (!token) return res.status(401).json({ message: 'Access denied. No token provided.' });
+    // 토큰 존재 여부 확인
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication token is missing' });
+    }
 
-  try {
-    
-    // 토큰을 검증하고, 유효한 경우 decoded에 디코딩된 정보 저장.
-    const decoded = jwt.verify(token, config.JWT_SECRET);
-
-    // 디코딩된 정보를 req.user에 저장하여 다음 미들웨어를 사용할 수 있게 한다.
-    req.user = decoded;
-    next();
-  } catch (ex) {
-    res.status(400).json({ message: 'Invalid token.' });
-  }
+    // 토큰 검증 및 사용자 조회
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // 토큰을 검증합니다.
+        req.user = await User.findById(decoded.id); // 토큰에서 추출한 사용자 ID로 사용자를 찾습니다.
+        
+        if (!req.user) {
+            return res.status(401).json({ message: 'Invalid token: User not found' });
+        }
+        next(); // 다음 미들웨어로 이동합니다.
+        
+    } catch (error) {
+        console.error('Error verifying token:', error);
+        res.status(401).json({ message: 'Invalid token' });
+    }
 };
+
+export default authMiddleware;

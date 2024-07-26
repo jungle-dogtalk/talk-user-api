@@ -243,3 +243,23 @@ export const getSpeechLengths = (sessionId) => {
     console.log('발화 비율 계산 후: ', sortedUsers);
     return sortedUsers;
 };
+
+// AI 응답 요청을 처리하는 함수
+export const getAnswer = async (sessionId) => {
+    const sessionData = sessionTranscripts[sessionId];
+
+    if (!sessionData) {
+        console.error('Session not found');
+        return;
+    }
+
+    const conversation = sessionData.full
+        .map((item) => `${item.nickname}: ${item.transcript}`)
+        .join('\n');
+    console.log('대화 스크립트: ', conversation);
+    try {
+        await audioService.getAnswer(sessionId, conversation);
+    } catch (error) {
+        console.error('Error fetching topic recommendations:', error);
+    }
+};

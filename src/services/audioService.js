@@ -155,3 +155,26 @@ export const getFeedback = async (nickname, conversation) => {
 
     return feedback;
 };
+
+export const getAnswer = async (sessionId, conversation) => {
+    const prompt = `
+    대화 내용:
+    ${conversation}
+    
+    이 대화에 대해 너는 어떻게 생각하는지 10대 유행어를 써서 유머스럽게, 사람처럼 한마디로 대답해줘.`;
+
+    const response = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500,
+        n: 1,
+        temperature: 0.7,
+    });
+
+    const Answer = response.choices[0].message.content.trim();
+    console.log('AI 피드백 응답: ', Answer);
+
+    io.to(sessionId).emit('answerRecommendations', Answer);
+
+    return Answer;
+};

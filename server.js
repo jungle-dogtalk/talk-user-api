@@ -12,6 +12,8 @@ const userSocketMap = new Map();
 
 const redisClient = await connectRedis.connectRedis();
 const redisSub = await connectRedis.connectRedis();
+let lastQueueLength = 0;
+let throttleTimeout = null;
 
 redisSub.subscribe('matchmaking');
 redisSub.on('message', async (channel, message) => {
@@ -27,10 +29,8 @@ redisSub.on('message', async (channel, message) => {
 
             // console.log('기준:', user);
             const bestMatches = await findBestMatch(user, parsedUsers);
-
             if (bestMatches.length === BEST_MATCHING_PERSON_NUMBERS) {
                 matchedGroups.push([user, ...bestMatches]);
-
                 for (const matchedUser of bestMatches) {
                     const index = parsedUsers.findIndex(
                         (u) => u.userId === matchedUser.userId
@@ -44,7 +44,6 @@ redisSub.on('message', async (channel, message) => {
                 break;
             }
         }
-
         for (const group of matchedGroups) {
             const sessionId = await createSession();
             for (const user of group) {
@@ -54,7 +53,6 @@ redisSub.on('message', async (channel, message) => {
                 console.log(userSocketMap);
                 console.log('세션', sessionId);
                 console.log('소켓', socketId);
-
                 if (socketId) {
                     io.to(socketId).emit('matched', { sessionId });
                     await redisClient.hset(
@@ -75,12 +73,29 @@ redisSub.on('message', async (channel, message) => {
             }
         }
         // 대기 큐 길이 업데이트를 모든 클라이언트에 전송
-        const queueLength = await redisClient.hlen('waiting_queue');
-        io.emit('queueLengthUpdate', queueLength);
+        // const queueLength = await redisClient.hlen('waiting_queue');
+        throttledUpdateQueueLength();
     }
-
-    console.log('마지막', userSocketMap);
 });
+
+// 대기큐 길이 변화 알림
+const updateQueueLength = async () => {
+    const currentQueueLength = await redisClient.hlen('waiting_queue');
+    if (currentQueueLength !== lastQueueLength) {
+        lastQueueLength = currentQueueLength;
+        io.emit('queueLengthUpdate', currentQueueLength);
+    }
+};
+
+// 대기큐 길이 업데이트 (1초 제한)
+const throttledUpdateQueueLength = () => {
+    if (!throttleTimeout) {
+        throttleTimeout = setTimeout(() => {
+            updateQueueLength();
+            throttleTimeout = null;
+        }, 1000); // 1초 간격으로 제한
+    }
+};
 
 const startServer = async () => {
     try {
@@ -102,38 +117,29 @@ const startServer = async () => {
                         socket.disconnect();
                         return;
                     }
-
                     userSocketMap.set(userId, socket.id);
                     console.log('유저소켓맵 -> ', userSocketMap);
-
                     socket.on('disconnect', async () => {
                         userSocketMap.delete(userId);
                         await redisClient.hdel('waiting_queue', userId);
 
                         // 유저가 대기 큐에서 삭제된 후 대기 큐 길이 업데이트 전송
-                        const queueLength = await redisClient.hlen(
-                            'waiting_queue'
-                        );
-                        io.emit('queueLengthUpdate', queueLength);
+                        throttledUpdateQueueLength();
                     });
 
                     console.log('유저아이디 -> ', userId);
                     console.log('관심사 -> ', userInterests);
-
                     const userExists = await redisClient.hexists(
                         'waiting_queue',
                         userId
                     );
-
                     if (!userExists) {
                         const userInterestsList = Array.isArray(userInterests)
                             ? userInterests
                             : userInterests.split(',');
-
                         const aiInterestsList = Array.isArray(aiInterests)
                             ? aiInterests
                             : aiInterests.split(',');
-
                         await redisClient.hset(
                             'waiting_queue',
                             userId,
@@ -147,32 +153,24 @@ const startServer = async () => {
                                 answer,
                             })
                         );
-
                         const queueLength = await redisClient.hlen(
                             'waiting_queue'
                         );
                         console.log('대기큐 길이 -> ', queueLength);
-
                         if (queueLength % MATCH_MAKING_PERSON_NUMBERS === 0) {
                             redisClient.publish('matchmaking', 'match');
                         }
 
-                        //새로운 유저가 대기 큐에 추가된 후 대기 큐 길이 업데이트 전송
-                        io.emit('queueLengthUpdate', queueLength);
+                        //새로운 유저가 대기 큐에 추가된 후 대기 큐 길이 업데이트 후 전송
+                        throttledUpdateQueueLength();
                     } else {
                         console.log('유저가 이미 대기큐에 존재합니다.');
-                        const queueLength = await redisClient.hlen(
-                            'waiting_queue'
-                        );
-                        console.log('현재 대기큐 길이 -> ', queueLength);
-
                         //대기 큐 길이 전송
-                        io.emit('queueLengthUpdate', queueLength);
+                        throttledUpdateQueueLength();
                     }
                 }
             );
         });
-
         server.listen(config.PORT, () => {
             console.log(`Server is running on port ${config.PORT}`);
         });
@@ -180,7 +178,5 @@ const startServer = async () => {
         console.error('Failed to connect to MongoDB', err);
     }
 };
-
 startServer();
-
 export { redisClient, redisSub };

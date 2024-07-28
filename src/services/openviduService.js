@@ -107,9 +107,9 @@ export const calculateTimer = async (sessionId) => {
 // 시간초과에 의한 세션 종료
 const destorySession = async (sessionId) => {
   const session = OV.activeSessions.find(s => s.sessionId === sessionId);
-  if (!session) {
-    throw new BadRequestError(`존재하지 않는 세션: ${sessionId}`);
+  if (session) {
+    await session.close();
   }
 
-  await session.close();
+
 }

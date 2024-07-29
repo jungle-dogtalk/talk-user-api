@@ -22,6 +22,7 @@ import {
     clearTranscriptsForSession,
     recommendTopics,
     getSpeechLengths,
+    getAnswer,
 } from './controllers/audioController.js';
 
 const app = express();
@@ -107,6 +108,13 @@ io.on('connection', (socket) => {
         console.log('in request');
         const { sessionId } = data;
         recommendTopics(sessionId);
+    });
+
+    // 클라이언트에서 발생한 AI 응답 요청 이벤트 수신
+    socket.on('requestAIAnswer', (data) => {
+        console.log('in request answer');
+        const { sessionId } = data;
+        getAnswer(sessionId);
     });
 
     // 세션에서 연결을 끊을 때
